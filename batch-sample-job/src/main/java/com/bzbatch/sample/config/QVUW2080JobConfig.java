@@ -1,9 +1,13 @@
 package com.bzbatch.sample.config;
 
+
 import com.bzbatch.sample.dto.AutoBatchCommonDto;
 import com.bzbatch.sample.job.QVUW2080_01Tasklet;
 import com.bzbatch.sample.mapper.QVUW2080_01_Query;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecutionListener;
+import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -20,6 +24,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 @ConditionalOnProperty(name = "spring.batch.job.name", havingValue = "QVUWDC_20800")
+@Slf4j
 public class QVUW2080JobConfig {
     @Bean
     public Job qvuw2080Job(JobRepository jobRepository, Step qvuw2080step, JobExecutionListener listener) {
