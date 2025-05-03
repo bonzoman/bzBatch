@@ -14,7 +14,9 @@ import javax.sql.DataSource;
 @Configuration
 public class DataSourceConfiguration {
     @Bean(name = "defaultDataSource")
-    @ConfigurationProperties(prefix = "spring.batch.datasource.orasfqt-ssfqgvut")
+//    @Primary
+    @ConfigurationProperties(prefix = "bzbatch.datasource.orasfqt-ssfqgvut")
+//    @ConfigurationProperties(prefix = "spring.datasource")
     public DataSource defaultDataSource() {
         return DataSourceBuilder.create().build();
     }

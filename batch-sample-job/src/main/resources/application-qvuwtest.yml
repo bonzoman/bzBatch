@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: qvuw20800-job
+
+    datasource:
+      url: jdbc:oracle:thin:@localhost:1521/XE
+      username: g2m
+      password: g2m1!g2m2@
+      driver-class-name: oracle.jdbc.OracleDriver
+
+  batch:
+    job:
+      enabled: false  # 실행 시 어떤 Job을 실행할지 명시해야 하므로 false
+    jdbc:
+      initialize-schema: never  # 메타테이블 수동 생성 시
+bzbatch:
+  datasource:
+    orasfqt-ssfqgvut:
+      jdbc-url: jdbc:oracle:thin:@localhost:1521/XE
+      username: g2m
+      password: g2m1!g2m2@
+      driver-class-name: oracle.jdbc.OracleDriver
+#      hikari:
+#        maximum-pool-size: 10
+#        minimum-idle: 2
+#        idle-timeout: 30000
+#        pool-name: HikariCP
+#        max-lifetime: 60000
+
+mybatis:
+  mapper-locations: classpath:/mapper/**/*.xml
+  type-aliases-package: com.bzbatch.sample.model
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    root: INFO
+    com.bzbatch.sample: DEBUG
+    org.mybatis: DEBUG
+    org.springframework.jdbc.core: TRACE
+

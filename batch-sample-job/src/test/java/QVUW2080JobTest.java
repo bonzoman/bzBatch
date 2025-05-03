@@ -1,4 +1,3 @@
-import com.bzbatch.sample.QVUW2080JobApplication;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.BatchStatus;
@@ -11,10 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(properties = "spring.batch.job.name=QVUWDC_20800", classes = QVUW2080JobApplication.class)
+@SpringBootTest(properties = "spring.batch.job.name=QVUWDC_20800", classes = com.bzbatch.sample.QVUW2080JobApplication.class)
 @SpringBatchTest
 @ActiveProfiles({"mock", "qvuwtest"})
 class QVUW2080JobTest {
+    
     @Autowired
     private JobLauncherTestUtils jobLauncherTestUtils;
 

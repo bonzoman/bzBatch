@@ -1,12 +1,12 @@
 package com.bzbatch.sample.config;
 
 
+import com.bzbatch.common.config.SamgJobExecutionListener;
 import com.bzbatch.sample.dto.AutoBatchCommonDto;
 import com.bzbatch.sample.job.QVUW2080_01Tasklet;
 import com.bzbatch.sample.mapper.QVUW2080_01_Query;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -27,10 +27,10 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Slf4j
 public class QVUW2080JobConfig {
     @Bean
-    public Job qvuw2080Job(JobRepository jobRepository, Step qvuw2080step, JobExecutionListener listener) {
+    public Job qvuw2080Job(JobRepository jobRepository, Step qvuw2080step, SamgJobExecutionListener samgListener) {
         return new JobBuilder("QVUWDC_20800", jobRepository)
                 .start(qvuw2080step)
-                .listener(listener)
+                .listener(samgListener)
                 .build();
     }
 
