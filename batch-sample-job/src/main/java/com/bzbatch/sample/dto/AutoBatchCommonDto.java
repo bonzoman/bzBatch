@@ -1,5 +1,9 @@
 package com.bzbatch.sample.dto;
 
-public class AutoBatchCommonDto {
+import lombok.Data;
+import org.springframework.batch.item.Chunk;
 
+@Data
+public class AutoBatchCommonDto extends Chunk<AutoBatchCommonDto> {
+    String commonString;
 }

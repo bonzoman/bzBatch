@@ -1,0 +1,7 @@
+spring:
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      # 메타테이블 수동 생성 시
+      initialize-schema: never

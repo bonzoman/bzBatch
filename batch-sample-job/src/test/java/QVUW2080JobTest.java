@@ -14,7 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBatchTest
 @ActiveProfiles({"mock", "qvuwtest"})
 class QVUW2080JobTest {
-    
+
     @Autowired
     private JobLauncherTestUtils jobLauncherTestUtils;
 
@@ -23,6 +23,7 @@ class QVUW2080JobTest {
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("ODATE", "20250501")
                 .addString("TIME", "1500")
+                .addLong("unique", System.currentTimeMillis()) // 추가
                 .toJobParameters();
 
         JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);

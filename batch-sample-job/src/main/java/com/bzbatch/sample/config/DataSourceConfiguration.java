@@ -16,7 +16,6 @@ public class DataSourceConfiguration {
     @Bean(name = "defaultDataSource")
 //    @Primary
     @ConfigurationProperties(prefix = "bzbatch.datasource.orasfqt-ssfqgvut")
-//    @ConfigurationProperties(prefix = "spring.datasource")
     public DataSource defaultDataSource() {
         return DataSourceBuilder.create().build();
     }
