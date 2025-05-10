@@ -1,8 +1,8 @@
-package com.bzbatch.sampleTasklet.job;
+package com.bzbatch.sampleChunk.job;
 
-import com.bzbatch.sampleTasklet.dto.AutoBatchCommonDto;
-import com.bzbatch.sampleTasklet.dto.InFileAu02Vo;
-import com.bzbatch.sampleTasklet.mapper.QVUW2070_01_Query;
+import com.bzbatch.sampleChunk.dto.AutoBatchCommonDto;
+import com.bzbatch.sampleChunk.dto.InFileAu02Vo;
+import com.bzbatch.sampleChunk.mapper.QVUW2070_01_Query;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobParameters;
