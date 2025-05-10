@@ -16,7 +16,7 @@
     <description>Demo project for Spring Boot</description>
     <modules>
         <module>batch-common</module>
-        <module>batch-sample-job</module>
+        <module>batch-sampleTasklet-job</module>
     </modules>
     <properties>
         <java.version>21</java.version>

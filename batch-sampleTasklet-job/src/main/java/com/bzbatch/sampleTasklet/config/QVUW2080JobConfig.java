@@ -1,11 +1,11 @@
-package com.bzbatch.sample.config;
+package com.bzbatch.sampleTasklet.config;
 
 
 import com.bzbatch.common.config.SamgJobExecutionListener;
-import com.bzbatch.sample.dto.AutoBatchCommonDto;
-import com.bzbatch.sample.dto.InFileAu02Vo;
-import com.bzbatch.sample.job.QVUW2080_01Tasklet;
-import com.bzbatch.sample.mapper.QVUW2080_01_Query;
+import com.bzbatch.sampleTasklet.dto.AutoBatchCommonDto;
+import com.bzbatch.sampleTasklet.dto.InFileAu02Vo;
+import com.bzbatch.sampleTasklet.job.QVUW2080_01Tasklet;
+import com.bzbatch.sampleTasklet.mapper.QVUW2080_01_Query;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;

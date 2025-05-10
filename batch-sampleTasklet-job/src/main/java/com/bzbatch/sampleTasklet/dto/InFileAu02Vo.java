@@ -1,4 +1,4 @@
-package com.bzbatch.sample.dto;
+package com.bzbatch.sampleTasklet.dto;
 
 import lombok.Data;
 

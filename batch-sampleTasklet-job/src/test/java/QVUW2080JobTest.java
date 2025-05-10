@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(properties = "spring.batch.job.name=QVUWDC_20800", classes = com.bzbatch.sample.QVUW2080JobApplication.class)
+@SpringBootTest(properties = "spring.batch.job.name=QVUWDC_20800", classes = com.bzbatch.sampleTasklet.QVUW2080JobApplication.class)
 @SpringBatchTest
 @ActiveProfiles({"mock", "qvuwtest"})
 class QVUW2080JobTest {

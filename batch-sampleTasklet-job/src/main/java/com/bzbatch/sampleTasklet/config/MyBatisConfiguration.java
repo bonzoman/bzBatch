@@ -1,4 +1,4 @@
-package com.bzbatch.sample.config;
+package com.bzbatch.sampleTasklet.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -15,7 +15,7 @@ import javax.sql.DataSource;
 @Slf4j
 @Configuration
 public class MyBatisConfiguration {
-    
+
     @Value("${mybatis.mapper-locations}")
     private String mapperLocations;
 

@@ -1,6 +1,6 @@
-package com.bzbatch.sample.mapper;
+package com.bzbatch.sampleTasklet.mapper;
 
-import com.bzbatch.sample.dto.InFileAu02Vo;
+import com.bzbatch.sampleTasklet.dto.InFileAu02Vo;
 import lombok.Builder;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
