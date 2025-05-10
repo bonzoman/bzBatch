@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: qvuw20800-job
+
+bzbatch:
+  datasource:
+    orasfqt-ssfqgvut:
+      jdbc-url: jdbc:oracle:thin:@localhost:1521/XE
+      username: g2m
+      password: g2m1!g2m2@
+      driver-class-name: oracle.jdbc.OracleDriver
+#      hikari:
+#        maximum-pool-size: 10
+#        minimum-idle: 2
+#        idle-timeout: 30000
+#        pool-name: HikariCP
+#        max-lifetime: 60000
+
+mybatis:
+  mapper-locations: classpath:/mapper/**/*.xml
+  type-aliases-package: com.bzbatch.sample.model
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    root: INFO
+    com.bzbatch.sample: DEBUG
+    org.mybatis: DEBUG
+    org.springframework.jdbc.core: INFO
+

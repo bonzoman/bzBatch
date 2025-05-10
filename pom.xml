@@ -17,6 +17,7 @@
     <modules>
         <module>batch-common</module>
         <module>batch-sampleTasklet-job</module>
+        <module>batch-sampleChunk-job</module>
     </modules>
     <properties>
         <java.version>21</java.version>

@@ -10,10 +10,10 @@ import org.springframework.context.annotation.ComponentScan;
 //        "com.bzbatch.sampleTasklet"
 })
 @SpringBootApplication
-public class QVUW2080JobApplication {
+public class QVUW2070JobApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(QVUW2080JobApplication.class, args);
+        SpringApplication.run(QVUW2070JobApplication.class, args);
     }
 
 }
