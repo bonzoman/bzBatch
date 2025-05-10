@@ -3,5 +3,7 @@ spring:
     job:
       enabled: false
     jdbc:
-      # 메타테이블 수동 생성 시
-      initialize-schema: never
+      initialize-schema: never # 메타테이블 생성 never: 생성하지않음, always: 자동 생성
+  output:
+    ansi:
+      enabled: ALWAYS #로그 콘솔에 색깔

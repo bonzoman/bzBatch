@@ -27,5 +27,5 @@ logging:
     root: INFO
     com.bzbatch.sample: DEBUG
     org.mybatis: DEBUG
-    org.springframework.jdbc.core: TRACE
+    org.springframework.jdbc.core: INFO
 

@@ -23,6 +23,7 @@ class QVUW2080JobTest {
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("ODATE", "20250501")
                 .addString("TIME", "1500")
+                .addString("JOB_OPT", "S")
                 .addLong("unique", System.currentTimeMillis()) // 추가
                 .toJobParameters();
 
