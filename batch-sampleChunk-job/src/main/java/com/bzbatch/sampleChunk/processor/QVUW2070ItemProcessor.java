@@ -9,6 +9,7 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.lang.NonNull;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -18,6 +19,8 @@ public class QVUW2070ItemProcessor implements ItemProcessor<InFileAu02Vo, AutoBa
     private final String jobOpt;
     //    private final String manager;
     private String manager2;
+    private int count = 0;
+
 
     @BeforeStep
     public void retrieveManagerFromContext(StepExecution stepExecution) {
@@ -28,22 +31,28 @@ public class QVUW2070ItemProcessor implements ItemProcessor<InFileAu02Vo, AutoBa
     }
 
     @Override
-    public AutoBatchCommonDto process(InFileAu02Vo item) throws Exception {
+    public AutoBatchCommonDto process(@NonNull InFileAu02Vo item) {
+        count++;
         log.debug("[QVUW2070ItemProcessor]  process ======");
-
-        log.debug("처리 대상: {}", item);
-
-        if ("D".equalsIgnoreCase(jobOpt)) {
-            query.delete2080_01(item);
-        } else if ("S".equalsIgnoreCase(jobOpt)) {
-            query.delete2080_01(item);
-//            item.setItemAttr04(manager);
-            item.setItemAttr04(manager2);
-            query.insert2080_01(item);
-        }
+        log.debug("[{}번째 처리] 대상: {}", count, item);
 
         AutoBatchCommonDto dto = new AutoBatchCommonDto();
-        dto.setCommonString("성공: " + item.getLobCd());
+
+        try {
+            if ("D".equalsIgnoreCase(jobOpt)) {
+                query.delete2080_01(item);
+            } else if ("S".equalsIgnoreCase(jobOpt)) {
+                query.delete2080_01(item);
+//            item.setItemAttr04(manager);
+                item.setItemAttr04(manager2);
+                query.insert2080_01(item);
+            }
+
+            dto.setCommonString("성공: " + item.getItemName());
+        } catch (Exception e) {
+            log.warn("[{}번째 처리 실패] {}", count, e.getMessage());
+            dto.setCommonString("실패: " + item.getItemName());
+        }
         return dto;
     }
 }

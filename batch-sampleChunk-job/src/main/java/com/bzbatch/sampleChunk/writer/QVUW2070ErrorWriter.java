@@ -8,7 +8,9 @@ import org.springframework.batch.core.SkipListener;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.lang.NonNull;
 
+@Deprecated
 @Slf4j
 @RequiredArgsConstructor
 public class QVUW2070ErrorWriter implements SkipListener<Object, Object> {
@@ -18,7 +20,7 @@ public class QVUW2070ErrorWriter implements SkipListener<Object, Object> {
     private FlatFileItemWriter<AutoBatchCommonDto> delegate;
 
     @Override
-    public void onSkipInProcess(Object item, Throwable t) {
+    public void onSkipInProcess(@NonNull Object item, @NonNull Throwable t) {
         try {
             if (delegate == null) initWriter();
             AutoBatchCommonDto dto = new AutoBatchCommonDto();
@@ -42,10 +44,10 @@ public class QVUW2070ErrorWriter implements SkipListener<Object, Object> {
     }
 
     @Override
-    public void onSkipInRead(Throwable t) {
+    public void onSkipInRead(@NonNull Throwable t) {
     }
 
     @Override
-    public void onSkipInWrite(Object item, Throwable t) {
+    public void onSkipInWrite(@NonNull Object item, @NonNull Throwable t) {
     }
 }

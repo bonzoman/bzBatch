@@ -7,7 +7,6 @@ import com.bzbatch.sampleChunk.dto.InFileAu02Vo;
 import com.bzbatch.sampleChunk.listener.QVUW2070StepListener;
 import com.bzbatch.sampleChunk.mapper.QVUW2070_01_Query;
 import com.bzbatch.sampleChunk.processor.QVUW2070ItemProcessor;
-import com.bzbatch.sampleChunk.writer.QVUW2070ErrorWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -16,12 +15,16 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
+import org.springframework.batch.item.support.ClassifierCompositeItemWriter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.classify.Classifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
@@ -44,23 +47,25 @@ public class QVUW2070JobConfig {
     @Bean
     public Step qvuw2070ChunkStep(JobRepository jobRepository,
                                   PlatformTransactionManager transactionManager,
+                                  QVUW2070StepListener qvuw2070StepListener,
                                   FlatFileItemReader<InFileAu02Vo> fileReader,
                                   QVUW2070ItemProcessor processor,
-                                  FlatFileItemWriter<AutoBatchCommonDto> writer,
-                                  QVUW2070StepListener qvuw2070StepListener,
-                                  QVUW2070ErrorWriter errorWriter
+                                  ClassifierCompositeItemWriter<AutoBatchCommonDto> compositeWriter
+//                                  FlatFileItemWriter<AutoBatchCommonDto> writer,
+//                                  QVUW2070ErrorWriter errorWriter
     ) {
         log.debug("[QVUW2070JobConfig]  qvuw2070ChunkStep ======");
         return new StepBuilder("qvuw2070ChunkStep", jobRepository)
                 .<InFileAu02Vo, AutoBatchCommonDto>chunk(2, transactionManager)
                 .reader(fileReader)
                 .processor(processor)
-                .writer(writer)
+                .writer(compositeWriter)
+//                .writer(writer)
                 .faultTolerant() // 예외발생 시 skip/retry 정책
                 .skipLimit(10) // 최대 스킵 건수
                 .skip(Exception.class) // 스킵할 예외 지정
                 .listener(qvuw2070StepListener)
-                .listener(errorWriter)
+//                .listener(errorWriter)
                 // ↓ 여기서 추가 가능
 //                .listener(new StepExecutionListener() { … })                    // Step 전/후 처리 로직
 //                .retryLimit(3)                                               // 재시도 횟수
@@ -98,11 +103,11 @@ public class QVUW2070JobConfig {
 
     @Bean
     @StepScope
-    public FlatFileItemWriter<AutoBatchCommonDto> itemWriter(@Value("#{jobParameters['ODATE']}") String date,
-                                                             @Value("#{jobParameters['TIME']}") String time) {
-        log.debug("[QVUW2070JobConfig]  itemWriter ======");
+    public FlatFileItemWriter<AutoBatchCommonDto> successFileWriter(@Value("#{jobParameters['ODATE']}") String date,
+                                                                    @Value("#{jobParameters['TIME']}") String time) {
+        log.debug("[QVUW2070JobConfig]  successFileWriter ======");
         return new FlatFileItemWriterBuilder<AutoBatchCommonDto>()
-                .name("successWriter")
+                .name("successFileWriter")
                 .resource(new FileSystemResource("/batchlog/ZU2080." + date + "." + time + ".LOG.OUT"))
                 .encoding("EUC-KR")
                 .delimited().delimiter("^")
@@ -112,10 +117,43 @@ public class QVUW2070JobConfig {
 
     @Bean
     @StepScope
-    public QVUW2070ErrorWriter errorWriter(@Value("#{jobParameters['ODATE']}") String date,
-                                           @Value("#{jobParameters['TIME']}") String time) {
-        log.debug("[QVUW2070JobConfig]  errorWriter ======");
-        return new QVUW2070ErrorWriter(date, time);
+    public FlatFileItemWriter<AutoBatchCommonDto> failFileWriter(@Value("#{jobParameters['ODATE']}") String date,
+                                                                 @Value("#{jobParameters['TIME']}") String time) {
+        log.debug("[QVUW2070JobConfig]  failFileWriter ======");
+        return new FlatFileItemWriterBuilder<AutoBatchCommonDto>()
+                .name("failFileWriter")
+                .resource(new FileSystemResource("/batchlog/ZU2080." + date + "." + time + ".ERR.OUT"))
+                .encoding("EUC-KR")
+                .delimited().delimiter("^")
+                .names("commonString")
+                .build();
     }
+
+    @Bean
+    @StepScope
+    public ClassifierCompositeItemWriter<AutoBatchCommonDto> compositeWriter(
+            @Qualifier("successFileWriter") FlatFileItemWriter<AutoBatchCommonDto> successWriter,
+            @Qualifier("failFileWriter") FlatFileItemWriter<AutoBatchCommonDto> failWriter) {
+
+        ClassifierCompositeItemWriter<AutoBatchCommonDto> writer = new ClassifierCompositeItemWriter<>();
+
+        writer.setClassifier((Classifier<AutoBatchCommonDto, ItemWriter<? super AutoBatchCommonDto>>) dto -> {
+            if (dto.getCommonString() != null && dto.getCommonString().startsWith("실패:")) {
+                return failWriter;
+            } else {
+                return successWriter;
+            }
+        });
+
+        return writer;
+    }
+
+//    @Bean
+//    @StepScope
+//    public QVUW2070ErrorWriter errorWriter(@Value("#{jobParameters['ODATE']}") String date,
+//                                           @Value("#{jobParameters['TIME']}") String time) {
+//        log.debug("[QVUW2070JobConfig]  errorWriter ======");
+//        return new QVUW2070ErrorWriter(date, time);
+//    }
 
 }
