@@ -4,12 +4,11 @@ package com.bzbatch.sampleChunk.config;
 import com.bzbatch.common.config.SamgJobExecutionListener;
 import com.bzbatch.sampleChunk.dto.AutoBatchCommonDto;
 import com.bzbatch.sampleChunk.dto.InFileAu02Vo;
-import com.bzbatch.sampleChunk.listener.QVUW2070StepListener;
 import com.bzbatch.sampleChunk.mapper.QVUW2070_01_Query;
 import com.bzbatch.sampleChunk.processor.QVUW2070ItemProcessor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
@@ -28,12 +27,21 @@ import org.springframework.classify.Classifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.lang.NonNull;
 import org.springframework.transaction.PlatformTransactionManager;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Configuration
 @ConditionalOnProperty(name = "spring.batch.job.name", havingValue = "QVUWDC_20700")
+@RequiredArgsConstructor
 @Slf4j
 public class QVUW2070JobConfig {
+
+    private final QVUW2070_01_Query qvuw207001Query;
+
     @Bean
     public Job qvuw2070Job(JobRepository jobRepository, Step qvuw2070ChunkStep, SamgJobExecutionListener samgJobListener) {
         log.debug("[QVUW2070JobConfig]  qvuw2070Job ======");
@@ -47,7 +55,7 @@ public class QVUW2070JobConfig {
     @Bean
     public Step qvuw2070ChunkStep(JobRepository jobRepository,
                                   PlatformTransactionManager transactionManager,
-                                  QVUW2070StepListener qvuw2070StepListener,
+//                                  QVUW2070StepListener qvuw2070StepListener,
                                   FlatFileItemReader<InFileAu02Vo> fileReader,
                                   QVUW2070ItemProcessor processor,
                                   ClassifierCompositeItemWriter<AutoBatchCommonDto> compositeWriter
@@ -64,7 +72,39 @@ public class QVUW2070JobConfig {
                 .faultTolerant() // 예외발생 시 skip/retry 정책
                 .skipLimit(10) // 최대 스킵 건수
                 .skip(Exception.class) // 스킵할 예외 지정
-                .listener(qvuw2070StepListener)
+//                .listener(qvuw2070StepListener)
+                .listener(new StepExecutionListener() {
+                    @Override
+                    public void beforeStep(@NonNull StepExecution stepExecution) {
+                        log.debug("[QVUW2070StepListener]  beforeStep ======");
+                        Path input = Paths.get("/batchlog/INFILESAMPLE.IN");
+                        Path touch = Paths.get("/batchlog/INFILESAMPLE.IN.TOUCH");
+
+                        if (!Files.exists(input) || !Files.exists(touch)) {
+                            //NOTE: STOP종료(오류아님)
+                            log.warn("[SKIP] 필수 파일 누락 → Step 강제 중단 처리됨: {}, {}", input, touch);
+                            stepExecution.setTerminateOnly();
+                            //NOTE: Exception종료(오류)
+//                          log.warn("[SKIP] 필수 파일 누락 → Job 정상 종료 처리됨: {}, {}", input, touch);
+//                          throw new IllegalStateException("필수 입력 파일이 존재하지 않습니다: " + input + " / " + touch);
+                        } else {
+                            log.info("✔ 입력 파일 존재 확인 완료: {}, {}", input, touch);
+                            // 매니저 이름 조회
+                            String manager2 = qvuw207001Query.selectManager("PRESIDENT");
+
+                            // ExecutionContext에 저장
+                            stepExecution.getExecutionContext().put("manager2", manager2);
+                            log.info("✔ 매니저 정보 저장 완료: {}", manager2);
+
+                        }
+                    }
+
+                    @Override
+                    public ExitStatus afterStep(@NonNull StepExecution stepExecution) {
+                        log.debug("[InputFileCheckListener]  afterStep ======");
+                        return stepExecution.getExitStatus();
+                    }
+                })
 //                .listener(errorWriter)
                 // ↓ 여기서 추가 가능
 //                .listener(new StepExecutionListener() { … })                    // Step 전/후 처리 로직
