@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+@Deprecated
 @Slf4j
 @Builder
 public class QVUW2070_01Tasklet implements Tasklet {

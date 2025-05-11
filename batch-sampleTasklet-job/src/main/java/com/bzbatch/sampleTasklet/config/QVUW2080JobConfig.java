@@ -31,12 +31,12 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Slf4j
 public class QVUW2080JobConfig {
     @Bean
-    public Job qvuw2080Job(JobRepository jobRepository, Step qvuw2080step, SamgJobExecutionListener samgListener) {
-        log.debug("[JOB] --------------- qvuw2080Job ---------------");
+    public Job qvuw2080Job(JobRepository jobRepository, Step qvuw2080step, SamgJobExecutionListener samgJobListener) {
+        log.debug("[JOB]  qvuw2080Job ======");
         return new JobBuilder("QVUWDC_20800", jobRepository)
                 .start(qvuw2080step)
                 .incrementer(new RunIdIncrementer())  // 중요!
-                .listener(samgListener)
+                .listener(samgJobListener)
                 .build();
     }
 
@@ -47,7 +47,7 @@ public class QVUW2080JobConfig {
                              FlatFileItemReader<InFileAu02Vo> fileReader,
                              FlatFileItemWriter<AutoBatchCommonDto> fileWriter,
                              FlatFileItemWriter<AutoBatchCommonDto> errfileWriter) {
-        log.debug("[STEP] --------------- qvuw2080step ---------------");
+        log.debug("[STEP]  qvuw2080step ======");
         return new StepBuilder("qvuw2080step", jobRepository)
                 .tasklet(tasklet, transactionManager)
                 .stream(fileReader) //NOTE: Step에서 open/close 자동 관리됨 (stream 등록됨) Tasklet에서 open/close 안해도 됨
@@ -72,7 +72,7 @@ public class QVUW2080JobConfig {
                            FlatFileItemWriter<AutoBatchCommonDto> errfileWriter,
                            PlatformTransactionManager transactionManager //Note: 트랜잭션 수동제어를 위해 추가
     ) {
-        log.debug("[tasklet] --------------- tasklet ---------------");
+        log.debug("[tasklet]  tasklet ======");
         return QVUW2080_01Tasklet.builder()
                 .qvuw208001Query(query)
                 .fileReader(fileReader)
@@ -86,7 +86,7 @@ public class QVUW2080JobConfig {
     @StepScope
     public FlatFileItemReader<InFileAu02Vo> fileReader(@Value("#{jobParameters['ODATE']}") String date,
                                                        @Value("#{jobParameters['TIME']}") String time) {
-        log.debug("[fileReader] --------------- fileReader ---------------");
+        log.debug("[fileReader]  fileReader ======");
 
 
         return new FlatFileItemReaderBuilder<InFileAu02Vo>()

@@ -25,7 +25,8 @@ mybatis:
 logging:
   level:
     root: INFO
-    com.bzbatch.sample: DEBUG
+    com.bzbatch: DEBUG
     org.mybatis: DEBUG
+    org.mybatis.spring.SqlSessionUtils: INFO
     org.springframework.jdbc.core: INFO
 
