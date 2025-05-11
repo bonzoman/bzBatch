@@ -27,6 +27,6 @@ logging:
     root: INFO
     com.bzbatch: DEBUG
     org.mybatis: DEBUG
-    org.mybatis.spring.SqlSessionUtils: INFO
     org.springframework.jdbc.core: INFO
-
+    org.mybatis.spring.SqlSessionUtils: INFO
+    org.springframework.transaction: TRACE

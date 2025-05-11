@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 
 @Mapper
-public interface QVUW2070_01_Query {
+public interface QVUW_Query {
 
     @Select("""
             SELECT

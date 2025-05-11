@@ -1,6 +1,6 @@
 package com.bzbatch.sampleChunk.listener;
 
-import com.bzbatch.sampleChunk.mapper.QVUW2070_01_Query;
+import com.bzbatch.sampleChunk.mapper.QVUW_Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.ExitStatus;
@@ -19,7 +19,7 @@ import java.nio.file.Paths;
 @RequiredArgsConstructor
 public class QVUW2070StepListener implements StepExecutionListener {
 
-    private final QVUW2070_01_Query query;
+    private final QVUW_Query query;
 
     @Override
     public void beforeStep(@NonNull StepExecution stepExecution) {
