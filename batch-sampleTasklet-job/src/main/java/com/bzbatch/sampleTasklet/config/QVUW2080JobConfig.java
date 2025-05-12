@@ -4,9 +4,10 @@ package com.bzbatch.sampleTasklet.config;
 import com.bzbatch.common.config.SamgJobExecutionListener;
 import com.bzbatch.sampleTasklet.dto.AutoBatchCommonDto;
 import com.bzbatch.sampleTasklet.dto.InFileAu02Vo;
-import com.bzbatch.sampleTasklet.job.QVUW2080_01Tasklet;
+import com.bzbatch.sampleTasklet.job.QVUW2080_02Tasklet;
 import com.bzbatch.sampleTasklet.mapper.QVUW2080_01_Query;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -65,20 +66,37 @@ public class QVUW2080JobConfig {
                 .build();
     }
 
+//    @Bean
+//    public Tasklet tasklet(QVUW2080_01_Query query,
+//                           FlatFileItemReader<InFileAu02Vo> fileReader,
+//                           FlatFileItemWriter<AutoBatchCommonDto> fileWriter,
+//                           FlatFileItemWriter<AutoBatchCommonDto> errfileWriter,
+//                           PlatformTransactionManager transactionManager //Note: 트랜잭션 수동제어를 위해 추가
+//    ) {
+//        log.debug("[tasklet]  tasklet ======");
+//        return QVUW2080_01Tasklet.builder()
+//                .qvuw208001Query(query)
+//                .fileReader(fileReader)
+//                .fileWriter(fileWriter)
+//                .errfileWriter(errfileWriter)
+//                .transactionManager(transactionManager)              //Note: 트랜잭션 수동제어를 위해 추가
+//                .build();
+//    }
+
     @Bean
     public Tasklet tasklet(QVUW2080_01_Query query,
                            FlatFileItemReader<InFileAu02Vo> fileReader,
                            FlatFileItemWriter<AutoBatchCommonDto> fileWriter,
                            FlatFileItemWriter<AutoBatchCommonDto> errfileWriter,
-                           PlatformTransactionManager transactionManager //Note: 트랜잭션 수동제어를 위해 추가
+                           SqlSessionFactory sqlSessionFactory //Note: 트랜잭션 수동제어를 위해 추가
     ) {
         log.debug("[tasklet]  tasklet ======");
-        return QVUW2080_01Tasklet.builder()
+        return QVUW2080_02Tasklet.builder()
                 .qvuw208001Query(query)
                 .fileReader(fileReader)
                 .fileWriter(fileWriter)
                 .errfileWriter(errfileWriter)
-                .transactionManager(transactionManager)              //Note: 트랜잭션 수동제어를 위해 추가
+                .sqlSessionFactory(sqlSessionFactory)             //Note: 트랜잭션 수동제어를 위해 추가
                 .build();
     }
 

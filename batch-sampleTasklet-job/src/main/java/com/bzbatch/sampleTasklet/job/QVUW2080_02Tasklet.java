@@ -5,6 +5,9 @@ import com.bzbatch.sampleTasklet.dto.InFileAu02Vo;
 import com.bzbatch.sampleTasklet.mapper.QVUW2080_01_Query;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
@@ -14,9 +17,7 @@ import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.lang.NonNull;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import java.nio.file.Files;
@@ -25,12 +26,13 @@ import java.nio.file.Paths;
 
 @Slf4j
 @Builder
-public class QVUW2080_01Tasklet implements Tasklet {
+public class QVUW2080_02Tasklet implements Tasklet {
     private final QVUW2080_01_Query qvuw208001Query;
     private final FlatFileItemReader<InFileAu02Vo> fileReader;
     private final FlatFileItemWriter<AutoBatchCommonDto> fileWriter;
     private final FlatFileItemWriter<AutoBatchCommonDto> errfileWriter;
-    private final PlatformTransactionManager transactionManager;//Note: 트랜잭션 수동제어를 위해 추가
+    private final SqlSessionFactory sqlSessionFactory;//Note: 트랜잭션 수동제어를 위해 추가
+    private final int BATCH_SIZE = 10;
     private int gCount = 5;
 
     @Override
@@ -39,6 +41,7 @@ public class QVUW2080_01Tasklet implements Tasklet {
         String time = jobParameters.getString("TIME");
         String JOB_OPT = jobParameters.getString("JOB_OPT");
 
+        int batchCount = 0;
         int readCount = 0;
         int succCount = 0;
         int failCount = 0;
@@ -70,47 +73,68 @@ public class QVUW2080_01Tasklet implements Tasklet {
 
             InFileAu02Vo inFileAu02Vo;
 
-            if ("D".equalsIgnoreCase(JOB_OPT)) { //삭제모드
-                while ((inFileAu02Vo = fileReader.read()) != null) {
-                    TransactionStatus status = transactionManager.getTransaction(def);//Note: 트랜잭션 수동제어를 위해 추가
-                    try {
-                        readCount++;
-                        log.debug("Read inFileAu02Vo: " + inFileAu02Vo.getLobCd() + ", " + inFileAu02Vo.getItemDetl());
+            SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH, false);
+            try {
+                if ("D".equalsIgnoreCase(JOB_OPT)) { //삭제모드
+                    while ((inFileAu02Vo = fileReader.read()) != null) {
+                        try {
+                            readCount++;
+                            log.debug("Read inFileAu02Vo: " + inFileAu02Vo.getLobCd() + ", " + inFileAu02Vo.getItemDetl());
 
-                        //기존 건 delete
-                        int deleteCount = qvuw208001Query.delete2080_01(inFileAu02Vo);
+                            //기존 건 delete
+                            int deleteCount = qvuw208001Query.delete2080_01(inFileAu02Vo);
 
-                        transactionManager.commit(status);//Note: 트랜잭션 수동제어를 위해 추가
-                        succCount++;
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        transactionManager.rollback(status);//Note: 트랜잭션 수동제어를 위해 추가
-                        failCount++;
+                            batchCount++;
+                            succCount++;
+
+                            if (batchCount % BATCH_SIZE == 0) {
+                                session.flushStatements();
+                                session.commit();
+                                session.clearCache();
+                            }
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            failCount++;
+                        }
+                    }
+                } else if ("S".equalsIgnoreCase(JOB_OPT)) { //저장모드
+                    while ((inFileAu02Vo = fileReader.read()) != null) {
+                        try {
+                            readCount++;
+                            log.debug("Read inFileAu02Vo: " + inFileAu02Vo.getLobCd() + ", " + inFileAu02Vo.getItemDetl());
+
+                            //기존 건 delete
+                            int deleteCount = qvuw208001Query.delete2080_01(inFileAu02Vo);
+
+                            //신규 insert
+                            inFileAu02Vo.setItemAttr04(manager);
+                            int insertCount = qvuw208001Query.insert2080_01(inFileAu02Vo);
+                            batchCount++;
+                            succCount++;
+
+                            if (batchCount % BATCH_SIZE == 0) {
+                                session.flushStatements();
+                                session.commit();
+                                session.clearCache();
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            failCount++;
+                        }
                     }
                 }
-            } else if ("S".equalsIgnoreCase(JOB_OPT)) { //저장모드
-                while ((inFileAu02Vo = fileReader.read()) != null) {
-                    TransactionStatus status = transactionManager.getTransaction(def);//Note: 트랜잭션 수동제어를 위해 추가
-                    try {
-                        readCount++;
-                        log.debug("Read inFileAu02Vo: " + inFileAu02Vo.getLobCd() + ", " + inFileAu02Vo.getItemDetl());
 
-                        //기존 건 delete
-                        int deleteCount = qvuw208001Query.delete2080_01(inFileAu02Vo);
-
-                        //신규 insert
-                        inFileAu02Vo.setItemAttr04(manager);
-                        int insertCount = qvuw208001Query.insert2080_01(inFileAu02Vo);
-
-
-                        transactionManager.commit(status);//Note: 트랜잭션 수동제어를 위해 추가
-                        succCount++;
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        transactionManager.rollback(status);//Note: 트랜잭션 수동제어를 위해 추가
-                        failCount++;
-                    }
+                // 남은 배치 처리
+                if (batchCount % BATCH_SIZE != 0) {
+                    session.flushStatements();
+                    session.commit();
                 }
+            } catch (Exception e) {
+                log.error("전체 처리 중 예외", e);
+            } finally {
+                session.close();
+                log.info("전체 처리결과: 총건수={}, 성공={}, 실패={}", readCount, succCount, failCount);
             }
 
 //        fileReader.close();//수동 close
