@@ -14,7 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(properties = "spring.batch.job.name=QVUWDC_2072", classes = QVUW2070JobApplication.class)
 @SpringBatchTest
 @ActiveProfiles({"mock", "qvuwtest"})
-class QVUW2071JobTest {
+class QVUW2072JobTest {
 
     @Autowired
     private JobLauncherTestUtils jobLauncherTestUtils;
