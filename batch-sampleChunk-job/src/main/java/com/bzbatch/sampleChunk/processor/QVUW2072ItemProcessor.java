@@ -22,7 +22,7 @@ public class QVUW2072ItemProcessor implements ItemProcessor<InFileAu02Vo, InFile
 
     @BeforeStep
     public void retrieveManagerFromContext(StepExecution stepExecution) {
-        log.debug("[QVUW2072ItemProcessor]  retrieveManagerFromContext ======");
+        log.info("[QVUW2072ItemProcessor]  retrieveManagerFromContext ======");
         ExecutionContext context = stepExecution.getExecutionContext();
         this.manager = context.getString("manager2", "UNKNOWN");
         log.info("[Processor] 매니저 정보 로딩 완료: {}", manager);

@@ -33,17 +33,7 @@ public interface QVUW_Query {
              WHERE JOB =#{job}
             """)
     String selectManager(String job);
-
-    @Insert("""
-            INSERT INTO AU02
-                (LOB_CD,ITEM_NAME,ITEM_DETL,SEQ_NO,
-                 ITEM_DETL_ATTR01,ITEM_DETL_ATTR02,ITEM_DETL_ATTR03,ITEM_DETL_ATTR04,ITEM_DETL_ATTR05)
-            VALUES
-                (#{lobCd},#{itemName},#{itemDetl},
-                 (SELECT NVL(MAX(SEQ_NO), 0) + 1
-                    FROM AU02 WHERE LOB_CD = #{lobCd} AND ITEM_NAME = #{itemName} AND ITEM_DETL = #{itemDetl} ),
-                 #{itemAttr01},#{itemAttr02},#{itemAttr03},#{itemAttr04},#{itemAttr05})
-            """)
+    
     int insert2080_01(InFileAu02Vo inFileAu02Vo);
 
     @Insert("DELETE FROM AU02 WHERE LOB_CD = #{lobCd} AND ITEM_NAME = #{itemName} AND ITEM_DETL = #{itemDetl}")

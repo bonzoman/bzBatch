@@ -23,10 +23,13 @@ mybatis:
     map-underscore-to-camel-case: true
 
 logging:
+  pattern:
+    #   console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %highlight(%-5level) %logger{36} - %msg%n"
+    console: "%d{HH:mm:ss} %highlight(%-5level)  %cyan(%logger{36}) - %msg%n"
   level:
     root: INFO
-    com.bzbatch: DEBUG
-    org.mybatis: DEBUG
-    org.springframework.jdbc.core: INFO
-    org.mybatis.spring.SqlSessionUtils: INFO
-    org.springframework.transaction: TRACE
+#    com.bzbatch: DEBUG
+#    org.mybatis: DEBUG
+#    org.springframework.jdbc.core: INFO
+#    org.mybatis.spring.SqlSessionUtils: INFO
+#    org.springframework.transaction: TRACE
