@@ -2,7 +2,7 @@ package com.bzbatch.sampleChunk.mapper;
 
 import com.bzbatch.sampleChunk.dto.InFileAu02Vo;
 import lombok.Builder;
-import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
@@ -33,10 +33,10 @@ public interface QVUW_Query {
              WHERE JOB =#{job}
             """)
     String selectManager(String job);
-    
+
     int insert2080_01(InFileAu02Vo inFileAu02Vo);
 
-    @Insert("DELETE FROM AU02 WHERE LOB_CD = #{lobCd} AND ITEM_NAME = #{itemName} AND ITEM_DETL = #{itemDetl}")
+    @Delete("DELETE FROM AU02 WHERE LOB_CD = #{lobCd} AND ITEM_NAME = #{itemName} AND ITEM_DETL = #{itemDetl}")
     int delete2080_01(InFileAu02Vo inFileAu02Vo);
     /////////////////////////////////////////////////////////
 

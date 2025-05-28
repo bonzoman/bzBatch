@@ -71,6 +71,7 @@ public class QVUW2072JobConfig {
 
     @Bean
     public Step qvuw2072ChunkStep(JobRepository jobRepository,
+                                  @Qualifier("hrTransactionManager")
                                   PlatformTransactionManager transactionManager,
                                   QVUW_Query qvuwQuery,
 //                                  QVUW2072StepListener qvuw2072StepListener,
@@ -79,8 +80,8 @@ public class QVUW2072JobConfig {
 
 //                                  MyBatisBatchItemWriter<InFileAu02Vo> myBatisWriter
 //                                  ItemWriter<InFileAu02Vo> customDbWriterForBatch,
-//                                  ItemWriter<InFileAu02Vo> customDbWriterForSimple,
-                                  ItemWriter<InFileAu02Vo> customDbWriterForSimple2,
+                                  ItemWriter<InFileAu02Vo> customDbWriterForSimple,
+//                                  ItemWriter<InFileAu02Vo> customDbWriterForSimple2,
 
 //                                  ClassifierCompositeItemWriter<AutoBatchCommonDto> compositeWriter,
 //                                  @Qualifier("successFileWriter") FlatFileItemWriter<AutoBatchCommonDto> successFileWriter,
@@ -96,8 +97,8 @@ public class QVUW2072JobConfig {
 
 //                .writer(myBatisWriter) // DB 작업 처리
 //                .writer(customDbWriterForBatch) // DB 작업 처리
-//                .writer(customDbWriterForSimple) // DB 작업 처리
-                .writer(customDbWriterForSimple2) // DB 작업 처리
+                .writer(customDbWriterForSimple) // DB 작업 처리
+//                .writer(customDbWriterForSimple2) // DB 작업 처리
 
 //                .writer(compositeWriter)
 //                .stream(successFileWriter)  // <- 여기 필수!
@@ -301,7 +302,7 @@ public class QVUW2072JobConfig {
      */
     @Bean
     @StepScope
-    public ItemWriter<InFileAu02Vo> customDbWriterForSimple(SqlSessionFactory sqlSessionFactory,
+    public ItemWriter<InFileAu02Vo> customDbWriterForSimple(@Qualifier("defaultSqlSessionFactory") SqlSessionFactory sqlSessionFactory,
                                                             @Value("#{jobParameters['JOB_OPT']}") String jobOpt) {
         log.info("[QVUW2072JobConfig]  customDbWriter ======");
 
@@ -348,7 +349,7 @@ public class QVUW2072JobConfig {
 //                        qvuwQuery.delete2080_01(item); // 선삭제
 
                         if (item.getItemDetl().equals("Buto3")) {
-                            item.setSeqNo(1);//오류위해 세번째 Dup 오류 발생
+//                            item.setSeqNo(1);//오류위해 세번째 Dup 오류 발생
                             qvuwQuery.insert2080_01(item); // 후저장
                         }
                         qvuwQuery.insert2080_01(item); // 후저장

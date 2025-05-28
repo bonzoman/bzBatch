@@ -4,7 +4,7 @@ spring:
 
 bzbatch:
   datasource:
-    orasfqt-ssfqgvut:
+    orasfqt-ssfqgvut-g2m:
       jdbc-url: jdbc:oracle:thin:@localhost:1521/XE
       username: g2m
       password: g2m1!g2m2@
@@ -15,6 +15,11 @@ bzbatch:
 #        idle-timeout: 30000
 #        pool-name: HikariCP
 #        max-lifetime: 60000
+    orasfqt-ssfqgvut-hr:
+      jdbc-url: jdbc:oracle:thin:@localhost:1521/XE
+      username: HR
+      password: dhtmdwns1!
+      driver-class-name: oracle.jdbc.OracleDriver
 
 mybatis:
   mapper-locations: classpath:/mapper/**/*.xml

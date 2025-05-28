@@ -22,6 +22,13 @@ public class MyBatisConfiguration {
     @Bean
     @Primary
     public SqlSessionFactory defaultSqlSessionFactory(@Qualifier("defaultDataSource") DataSource dataSource) throws Exception {
+        log.debug("== defaultSqlSessionFactory ==");
+        return getSqlSessionFactory(dataSource);
+    }
+
+    @Bean
+    public SqlSessionFactory hrSqlSessionFactory(@Qualifier("hrDataSource") DataSource dataSource) throws Exception {
+        log.debug("== hrSqlSessionFactory ==");
         return getSqlSessionFactory(dataSource);
     }
 
