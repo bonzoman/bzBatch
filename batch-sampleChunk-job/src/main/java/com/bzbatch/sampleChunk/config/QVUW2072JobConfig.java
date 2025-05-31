@@ -1,6 +1,7 @@
 package com.bzbatch.sampleChunk.config;
 
 
+import com.bzbatch.common.CustomDbWriterTemplet;
 import com.bzbatch.common.config.SamgJobExecutionListener;
 import com.bzbatch.sampleChunk.dto.AutoBatchCommonDto;
 import com.bzbatch.sampleChunk.dto.InFileAu02Vo;
@@ -79,9 +80,10 @@ public class QVUW2072JobConfig {
                                   QVUW2072ItemProcessor processor,
 
 //                                  MyBatisBatchItemWriter<InFileAu02Vo> myBatisWriter
-                                  ItemWriter<InFileAu02Vo> customDbWriterForBatch,
+//                                  ItemWriter<InFileAu02Vo> customDbWriterForBatch,
 //                                  ItemWriter<InFileAu02Vo> customDbWriterForSimpleManualCommit,
 //                                  ItemWriter<InFileAu02Vo> customDbWriterForSimpleAutoCommit,
+                                  ItemWriter<InFileAu02Vo> customDbWriterTemplate,
 
 //                                  ClassifierCompositeItemWriter<AutoBatchCommonDto> compositeWriter,
 //                                  @Qualifier("successFileWriter") FlatFileItemWriter<AutoBatchCommonDto> successFileWriter,
@@ -96,9 +98,10 @@ public class QVUW2072JobConfig {
                 .processor(processor)
 
 //                .writer(myBatisWriter) // DB 작업 처리
-                .writer(customDbWriterForBatch) // DB 작업 처리
+//                .writer(customDbWriterForBatch) // DB 작업 처리
 //                .writer(customDbWriterForSimpleManualCommit) // DB 작업 처리
 //                .writer(customDbWriterForSimpleAutoCommit) // DB 작업 처리
+                .writer(customDbWriterTemplate) // DB 작업 처리
 
 //                .writer(compositeWriter)
 //                .stream(successFileWriter)  // <- 여기 필수!
@@ -239,7 +242,6 @@ public class QVUW2072JobConfig {
             @Override
             public void write(@NonNull Chunk<? extends InFileAu02Vo> items) {
                 SqlSession batchSession = null;
-                boolean batchFailed = false;
                 try {
                     batchSession = sqlSessionFactory.openSession(ExecutorType.BATCH, false);
                     log.debug("AutoCommit = {}", batchSession.getConnection().getAutoCommit());
@@ -264,7 +266,6 @@ public class QVUW2072JobConfig {
 //                    });
                     batchSession.commit(); // 커밋 꼭 필요
                 } catch (Exception e) {
-                    batchFailed = true;
                     log.warn("BATCH 모드 처리 실패. rollback 수행: {}", e.getMessage());
                     if (batchSession != null) {
                         try {
@@ -273,14 +274,8 @@ public class QVUW2072JobConfig {
                             log.error("rollback 중 오류 발생: {}", rollbackEx.getMessage());
                         }
                     }
-                } finally {
-                    if (batchSession != null) {
-                        batchSession.close(); // 명시적으로 닫기
-                    }
-                }
 
-                // 2차: BATCH 실패 시, 단건 처리로 재시도
-                if (batchFailed) {
+                    // 2차: BATCH 실패 시, 단건 처리로 재시도
                     try (SqlSession session = sqlSessionFactory.openSession(false)) {
                         log.debug("AutoCommit = {}", session.getConnection().getAutoCommit());
                         log.debug("TransactionFactory = {}", sqlSessionFactory.getConfiguration().getEnvironment().getTransactionFactory().getClass());
@@ -304,8 +299,13 @@ public class QVUW2072JobConfig {
                                 session.rollback();
                             }
                         } // for
-                    } catch (Exception e) {
-                        log.error("session Exception", e);
+                    } catch (Exception e2) {
+                        log.error("session Exception", e2);
+                    }
+
+                } finally {
+                    if (batchSession != null) {
+                        batchSession.close(); // 명시적으로 닫기
                     }
                 }
 
@@ -398,6 +398,60 @@ public class QVUW2072JobConfig {
                 }
             }
         };
+    }
+
+    /**
+     * @param jobOpt
+     * @return
+     */
+    @Bean
+    @StepScope
+    public ItemWriter<InFileAu02Vo> customDbWriterTemplate(@Qualifier("manualSqlSessionFactory") SqlSessionFactory sqlSessionFactory,
+                                                           @Value("#{jobParameters['JOB_OPT']}") String jobOpt) {
+
+        //람다 방식
+        return items -> {
+            new CustomDbWriterTemplet<InFileAu02Vo>(sqlSessionFactory)
+                    .execute(items.getItems(), QVUW_Query.class, true, (item, mapper) -> {
+                        QVUW_Query qvuwQuery = (QVUW_Query) mapper;
+
+                        if ("D".equalsIgnoreCase(jobOpt)) {
+                            qvuwQuery.delete2080_01(item);
+                        } else if ("S".equalsIgnoreCase(jobOpt)) {
+                            if ("Buto3".equals(item.getItemDetl())) {
+                                item.setSeqNo(1); // 예외 유도용
+                            }
+                            qvuwQuery.insert2080_01(item);
+                        }
+                    });
+        };
+
+        //익명 클래스 방식
+//        return new ItemWriter<InFileAu02Vo>() {
+//            @Override
+//            public void write(Chunk<? extends InFileAu02Vo> items) throws Exception {
+//                CustomDbWriterTemplet<InFileAu02Vo> templet = new CustomDbWriterTemplet<>(sqlSessionFactory);
+//
+//                BatchDbCallback<InFileAu02Vo> callback = new BatchDbCallback<>() {
+//                    @Override
+//                    public void doInSession(InFileAu02Vo item, Object mapper) {
+//                        QVUW_Query qvuwQuery = (QVUW_Query) mapper;
+//
+//                        if ("D".equalsIgnoreCase(jobOpt)) {
+//                            qvuwQuery.delete2080_01(item);
+//                        } else if ("S".equalsIgnoreCase(jobOpt)) {
+//                            if ("Buto3".equals(item.getItemDetl())) {
+//                                item.setSeqNo(1); // 예외 유도용
+//                            }
+//                            qvuwQuery.insert2080_01(item);
+//                        }
+//                    }
+//                };
+//
+//                templet.execute(items.getItems(), QVUW_Query.class, true, callback);
+//            }
+//        };
+
     }
 
     @Bean
