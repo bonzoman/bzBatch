@@ -91,7 +91,7 @@ public class QVUW2072JobConfig {
     ) {
         log.info("[QVUW2072JobConfig]  qvuw2072ChunkStep ======");
         return new StepBuilder("qvuw2072ChunkStep", jobRepository)
-                .<InFileAu02Vo, InFileAu02Vo>chunk(200, transactionManager)
+                .<InFileAu02Vo, InFileAu02Vo>chunk(2, transactionManager)
                 .reader(fileReader)
                 .processor(processor)
 
@@ -220,8 +220,6 @@ public class QVUW2072JobConfig {
                 .build();
     }
 
-    //SqlSessionTemplate sqlSessionTemplate,
-
     /**
      * ExecutorType.BATCH 방식
      *
@@ -236,6 +234,8 @@ public class QVUW2072JobConfig {
         log.info("customDbWriterForBatch ======");
 
         return new ItemWriter<InFileAu02Vo>() {
+            private int count = 0;
+
             @Override
             public void write(@NonNull Chunk<? extends InFileAu02Vo> items) {
                 SqlSession batchSession = null;
@@ -246,6 +246,7 @@ public class QVUW2072JobConfig {
                     log.debug("TransactionFactory = {}", sqlSessionFactory.getConfiguration().getEnvironment().getTransactionFactory().getClass());
                     QVUW_Query query = batchSession.getMapper(QVUW_Query.class);
                     for (InFileAu02Vo item : items) {
+                        count++;
                         if ("D".equalsIgnoreCase(jobOpt)) {
                             query.delete2080_01(item);
                         } else if ("S".equalsIgnoreCase(jobOpt)) {
@@ -308,28 +309,10 @@ public class QVUW2072JobConfig {
                     }
                 }
 
+                log.debug("count: {}", count);
+
             }
         };
-//        //NOTE: 쿼리 N개 실행가능
-//        return items -> {
-//            try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH, false)) {
-//                QVUW_Query mapper = session.getMapper(QVUW_Query.class);
-//
-//                for (InFileAu02Vo item : items) {
-//                    if ("D".equalsIgnoreCase(jobOpt)) {
-//                        mapper.delete2080_01(item);
-//                    } else if ("S".equalsIgnoreCase(jobOpt)) {
-//                        mapper.delete2080_01(item); // 선삭제
-//                        mapper.insert2080_01(item); // 후저장
-//                    }
-//                }
-//
-//                session.commit(); // 커밋 꼭 필요
-//            } catch (Exception e) {
-//                log.error("Batch DB 처리 실패", e);
-//                throw e; // rollback 유도
-//            }
-//        };
     }
 
     /**
