@@ -34,6 +34,8 @@ public class QVUW2072ItemProcessor implements ItemProcessor<InFileAu02Vo, InFile
         log.debug("[QVUW2072ItemProcessor]  process ======");
         log.debug("[{}번째 처리] 대상: {}", count, item);
 
+//        String manager = query.selectManager("PRESIDENT");
+
 //        try {
         if ("D".equalsIgnoreCase(jobOpt)) {
 //                query.delete2080_01(item);

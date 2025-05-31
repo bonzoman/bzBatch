@@ -79,9 +79,9 @@ public class QVUW2072JobConfig {
                                   QVUW2072ItemProcessor processor,
 
 //                                  MyBatisBatchItemWriter<InFileAu02Vo> myBatisWriter
-//                                  ItemWriter<InFileAu02Vo> customDbWriterForBatch,
-                                  ItemWriter<InFileAu02Vo> customDbWriterForSimple,
-//                                  ItemWriter<InFileAu02Vo> customDbWriterForSimple2,
+                                  ItemWriter<InFileAu02Vo> customDbWriterForBatch,
+//                                  ItemWriter<InFileAu02Vo> customDbWriterForSimpleManualCommit,
+//                                  ItemWriter<InFileAu02Vo> customDbWriterForSimpleAutoCommit,
 
 //                                  ClassifierCompositeItemWriter<AutoBatchCommonDto> compositeWriter,
 //                                  @Qualifier("successFileWriter") FlatFileItemWriter<AutoBatchCommonDto> successFileWriter,
@@ -96,9 +96,9 @@ public class QVUW2072JobConfig {
                 .processor(processor)
 
 //                .writer(myBatisWriter) // DB 작업 처리
-//                .writer(customDbWriterForBatch) // DB 작업 처리
-                .writer(customDbWriterForSimple) // DB 작업 처리
-//                .writer(customDbWriterForSimple2) // DB 작업 처리
+                .writer(customDbWriterForBatch) // DB 작업 처리
+//                .writer(customDbWriterForSimpleManualCommit) // DB 작업 처리
+//                .writer(customDbWriterForSimpleAutoCommit) // DB 작업 처리
 
 //                .writer(compositeWriter)
 //                .stream(successFileWriter)  // <- 여기 필수!
@@ -231,44 +231,83 @@ public class QVUW2072JobConfig {
      */
     @Bean
     @StepScope
-    public ItemWriter<InFileAu02Vo> customDbWriterForBatch(SqlSessionFactory sqlSessionFactory,
+    public ItemWriter<InFileAu02Vo> customDbWriterForBatch(@Qualifier("manualSqlSessionFactory") SqlSessionFactory sqlSessionFactory,
                                                            @Value("#{jobParameters['JOB_OPT']}") String jobOpt) {
-        log.info("[QVUW2072JobConfig]  customDbWriter ======");
+        log.info("customDbWriterForBatch ======");
 
         return new ItemWriter<InFileAu02Vo>() {
             @Override
             public void write(@NonNull Chunk<? extends InFileAu02Vo> items) {
-                SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH, false);
+                SqlSession batchSession = null;
+                boolean batchFailed = false;
                 try {
-                    QVUW_Query mapper = session.getMapper(QVUW_Query.class);
+                    batchSession = sqlSessionFactory.openSession(ExecutorType.BATCH, false);
+                    log.debug("AutoCommit = {}", batchSession.getConnection().getAutoCommit());
+                    log.debug("TransactionFactory = {}", sqlSessionFactory.getConfiguration().getEnvironment().getTransactionFactory().getClass());
+                    QVUW_Query query = batchSession.getMapper(QVUW_Query.class);
                     for (InFileAu02Vo item : items) {
-                        try {
-                            if ("D".equalsIgnoreCase(jobOpt)) {
-                                mapper.delete2080_01(item);
-                            } else if ("S".equalsIgnoreCase(jobOpt)) {
-                                mapper.delete2080_01(item); // 선삭제
-//                                if (item.getItemDetl().equals("Buto3")) {
-//                                    item.setSeqNo(1);//오류위해 세번째 Dup 오류 발생
-//                                }
-                                mapper.insert2080_01(item); // 후저장
+                        if ("D".equalsIgnoreCase(jobOpt)) {
+                            query.delete2080_01(item);
+                        } else if ("S".equalsIgnoreCase(jobOpt)) {
+//                            query.delete2080_01(item); // 선삭제
+                            if (item.getItemDetl().equals("Buto3")) {
+                                item.setSeqNo(1);//오류위해 세번째 Dup 오류 발생
                             }
-                        } catch (Exception e1) {
-                            log.error("Batch DB 처리 실패1", e1);
+                            query.insert2080_01(item); // 후저장
                         }
                     } // for
-                    List<BatchResult> batchResultList = session.flushStatements();
+                    List<BatchResult> batchResultList = batchSession.flushStatements();
 //                    batchResultList.forEach(batchResult -> {
 //                        String sql = batchResult.getSql().toLowerCase(); // SQL 문자열 확인
 //                        log.debug("{}", batchResult.getUpdateCounts());
 //                    });
-                    session.commit(); // 커밋 꼭 필요
-                    log.debug("commit");
-                } catch (Exception e2) {
-                    log.error("Batch DB 처리 실패2", e2);
-                    session.rollback();
+                    batchSession.commit(); // 커밋 꼭 필요
+                } catch (Exception e) {
+                    batchFailed = true;
+                    log.warn("BATCH 모드 처리 실패. rollback 수행: {}", e.getMessage());
+                    if (batchSession != null) {
+                        try {
+                            batchSession.rollback(); // rollback 가능
+                        } catch (Exception rollbackEx) {
+                            log.error("rollback 중 오류 발생: {}", rollbackEx.getMessage());
+                        }
+                    }
                 } finally {
-                    session.close();
+                    if (batchSession != null) {
+                        batchSession.close(); // 명시적으로 닫기
+                    }
                 }
+
+                // 2차: BATCH 실패 시, 단건 처리로 재시도
+                if (batchFailed) {
+                    try (SqlSession session = sqlSessionFactory.openSession(false)) {
+                        log.debug("AutoCommit = {}", session.getConnection().getAutoCommit());
+                        log.debug("TransactionFactory = {}", sqlSessionFactory.getConfiguration().getEnvironment().getTransactionFactory().getClass());
+
+                        QVUW_Query mapper = session.getMapper(QVUW_Query.class);
+                        for (InFileAu02Vo item : items) {
+                            try {
+                                if ("D".equalsIgnoreCase(jobOpt)) {
+                                    mapper.delete2080_01(item);
+                                } else if ("S".equalsIgnoreCase(jobOpt)) {
+//                            mapper.delete2080_01(item); // 선삭제
+                                    if (item.getItemDetl().equals("Buto3")) {
+                                        item.setSeqNo(1);//오류위해 세번째 Dup 오류 발생
+                                    }
+                                    mapper.insert2080_01(item); // 후저장
+                                }
+                                session.commit(); // 커밋 꼭 필요
+                                log.debug("a");
+                            } catch (Exception e1) {
+                                log.error("Batch DB 처리 실패1", e1);
+                                session.rollback();
+                            }
+                        } // for
+                    } catch (Exception e) {
+                        log.error("session Exception", e);
+                    }
+                }
+
             }
         };
 //        //NOTE: 쿼리 N개 실행가능
@@ -294,7 +333,7 @@ public class QVUW2072JobConfig {
     }
 
     /**
-     * ExecutorType.SIMPLE 방식
+     * 처리 건단위 수동 commit
      *
      * @param sqlSessionFactory
      * @param jobOpt
@@ -302,41 +341,58 @@ public class QVUW2072JobConfig {
      */
     @Bean
     @StepScope
-    public ItemWriter<InFileAu02Vo> customDbWriterForSimple(@Qualifier("defaultSqlSessionFactory") SqlSessionFactory sqlSessionFactory,
-                                                            @Value("#{jobParameters['JOB_OPT']}") String jobOpt) {
+    public ItemWriter<InFileAu02Vo> customDbWriterForSimpleManualCommit(@Qualifier("manualSqlSessionFactory") SqlSessionFactory sqlSessionFactory,
+                                                                        @Value("#{jobParameters['JOB_OPT']}") String jobOpt) {
         log.info("[QVUW2072JobConfig]  customDbWriter ======");
 
+
         return new ItemWriter<InFileAu02Vo>() {
+            private int count = 0;
+
             @Override
             public void write(@NonNull Chunk<? extends InFileAu02Vo> items) {
-                SqlSession session = sqlSessionFactory.openSession(ExecutorType.SIMPLE);
-                QVUW_Query mapper = session.getMapper(QVUW_Query.class);
-                for (InFileAu02Vo item : items) {
-                    try {
-                        if ("D".equalsIgnoreCase(jobOpt)) {
-                            mapper.delete2080_01(item);
-                        } else if ("S".equalsIgnoreCase(jobOpt)) {
-                            mapper.delete2080_01(item); // 선삭제
-//                            if (item.getItemDetl().equals("Buto3")) {
-//                                item.setSeqNo(1);//오류위해 세번째 Dup 오류 발생
-//                                mapper.insert2080_01(item); // 후저장
-//                            }
-                            mapper.insert2080_01(item); // 후저장
+                try (SqlSession session = sqlSessionFactory.openSession(false)) {
+                    log.debug("AutoCommit = {}", session.getConnection().getAutoCommit());
+                    log.debug("TransactionFactory = {}", sqlSessionFactory.getConfiguration().getEnvironment().getTransactionFactory().getClass());
+
+                    QVUW_Query mapper = session.getMapper(QVUW_Query.class);
+                    for (InFileAu02Vo item : items) {
+                        count++;
+                        try {
+                            if ("D".equalsIgnoreCase(jobOpt)) {
+                                mapper.delete2080_01(item);
+                            } else if ("S".equalsIgnoreCase(jobOpt)) {
+//                            mapper.delete2080_01(item); // 선삭제
+//                                if (item.getItemDetl().equals("Buto3")) {
+//                                    item.setSeqNo(1);//오류위해 세번째 Dup 오류 발생
+//                                    mapper.insert2080_01(item); // 후저장
+//                                }
+                                mapper.insert2080_01(item); // 후저장
+                            }
+                            session.commit(); // 커밋 꼭 필요
+                            log.debug("a");
+                        } catch (Exception e1) {
+                            log.error("Batch DB 처리 실패1", e1);
+                            session.rollback();
                         }
-                        session.commit(); // 커밋 꼭 필요
-                    } catch (Exception e1) {
-                        log.error("Batch DB 처리 실패1", e1);
-//                        session.rollback(); //NOTE: 의미없음
-                    }
-                } // for
+                    } // for
+                } catch (Exception e) {
+                    log.error("session Exception", e);
+                }
             }
         };
     }
 
+    /**
+     * auto commit
+     *
+     * @param jobOpt
+     * @return
+     */
     @Bean
     @StepScope
-    public ItemWriter<InFileAu02Vo> customDbWriterForSimple2(QVUW_Query qvuwQuery,
-                                                             @Value("#{jobParameters['JOB_OPT']}") String jobOpt) {
+    public ItemWriter<InFileAu02Vo> customDbWriterForSimpleAutoCommit(QVUW_Query qvuwQuery,
+                                                                      @Value("#{jobParameters['JOB_OPT']}") String jobOpt) {
         log.debug("[QVUW2072JobConfig]  customDbWriter ======");
 
         //NOTE: 쿼리 N개 실행가능
