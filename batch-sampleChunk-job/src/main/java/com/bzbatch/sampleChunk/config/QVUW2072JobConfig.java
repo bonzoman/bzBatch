@@ -469,14 +469,14 @@ public class QVUW2072JobConfig {
 
                 templet.execute(items.getItems(),
                         QVUW_Query.class,
-                        true,
+                        false,
                         callback,
-                        (successCount) -> {
-                            // BATCH 또는 fallback 모드에서 commit 완료된 건수를 기반으로 개별 증가
-                            // 성공 시점에 확정
-                            confirmedInsert2080_01 += localInsert2080_01.get();
-                            confirmedInsert2080_02 += localInsert2080_02.get();
-                            confirmedInsert2080_03 += localInsert2080_03.get();
+                        (onCommit) -> {
+                            if (onCommit == 1) { //commit 성공시
+                                confirmedInsert2080_01 += localInsert2080_01.get();
+                                confirmedInsert2080_02 += localInsert2080_02.get();
+                                confirmedInsert2080_03 += localInsert2080_03.get();
+                            }
 
                             // 누수 방지
                             localInsert2080_01.remove();

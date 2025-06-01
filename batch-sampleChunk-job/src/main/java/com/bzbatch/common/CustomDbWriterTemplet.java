@@ -26,6 +26,7 @@ public class CustomDbWriterTemplet<T> {
 
         try {
             session = sqlSessionFactory.openSession(executorType, false);
+            log.debug("AutoCommit = {}", session.getConnection().getAutoCommit());
             Object mapper = session.getMapper(mapperClass);
 
             if (useBatch) {
@@ -36,7 +37,7 @@ public class CustomDbWriterTemplet<T> {
                 session.flushStatements();
                 session.commit();
                 // commit 성공 → call the consumer
-                onCommit.accept(1); // ✅ 단순히 commit 발생 사실만 알림 (count는 아님)
+                onCommit.accept(1); // ✅ batch commit success : 1 전달
 
 
 //                // BATCH 성공 시: 개별 항목에 대해 후처리 실행
@@ -54,8 +55,9 @@ public class CustomDbWriterTemplet<T> {
                     try {
                         callback.doInSession(item, mapper);
                         session.commit();
-                        onCommit.accept(1); // ✅ 단순히 commit 발생 사실만 알림 (count는 아님)
+                        onCommit.accept(1); // ✅ batch commit success : 1 전달
                     } catch (Exception ex) {
+                        onCommit.accept(0); // ✅ batch commit fail : 0 전달
                         log.error("단건 처리 실패: {}", item, ex);
                         session.rollback();
                     }
@@ -66,6 +68,7 @@ public class CustomDbWriterTemplet<T> {
             // 2차: BATCH 실패 시, 단건 처리로 재시도
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////
             if (useBatch) {
+                onCommit.accept(0); // ✅ batch commit fail : 0 전달
                 log.warn("예외 발생 → rollback", e);
                 if (session != null) {
                     try {
@@ -85,7 +88,7 @@ public class CustomDbWriterTemplet<T> {
                         try {
                             callback.doInSession(item, fallbackMapper);
                             fallbackSession.commit();
-                            onCommit.accept(1); // ✅ 단순히 commit 발생 사실만 알림 (count는 아님)
+                            onCommit.accept(1); // ✅ batch commit success : 1 전달
                         } catch (Exception ex) {
                             log.error("단건 처리 실패: {}", item, ex);
                             fallbackSession.rollback();
