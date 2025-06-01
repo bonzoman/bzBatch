@@ -94,7 +94,7 @@ public class QVUW2072JobConfig {
     ) {
         log.info("[QVUW2072JobConfig]  qvuw2072ChunkStep ======");
         return new StepBuilder("qvuw2072ChunkStep", jobRepository)
-                .<InFileAu02Vo, InFileAu02Vo>chunk(2, transactionManager)
+                .<InFileAu02Vo, InFileAu02Vo>chunk(200, transactionManager)
                 .reader(fileReader)
                 .processor(processor)
 
@@ -411,9 +411,6 @@ public class QVUW2072JobConfig {
                                                            @Value("#{jobParameters['JOB_OPT']}") String jobOpt) {
         //익명 클래스 방식
         return new ItemWriter<InFileAu02Vo>() {
-//            private final AtomicInteger countInsert2080_01 = new AtomicInteger(0);
-//            private final AtomicInteger countInsert2080_02 = new AtomicInteger(0);
-//            private final AtomicInteger countInsert2080_03 = new AtomicInteger(0);
 
             // 업무 중 임시 카운트
             private final ThreadLocal<Integer> localInsert2080_01 = ThreadLocal.withInitial(() -> 0);
@@ -443,14 +440,14 @@ public class QVUW2072JobConfig {
                             qvuwQuery.insert2080_01(item);
                             localInsert2080_01.set(localInsert2080_01.get() + 1);
 
-                            qvuwQuery.insert2080_02(item);
-                            localInsert2080_02.set(localInsert2080_02.get() + 1);
-
-
-                            for (int i = 0; i < 3; i++) {
-                                qvuwQuery.insert2080_03List(item);
-                                localInsert2080_03.set(localInsert2080_03.get() + 1);
+                            if ("Buto3".equals(item.getItemDetl())) {
+                                item.setSeqNo(1);//오류위해 세번째 Dup 오류 발생
+                                qvuwQuery.insert2080_02(item);
+                                localInsert2080_02.set(localInsert2080_02.get() + 1);
                             }
+
+                            qvuwQuery.insert2080_03List(item);
+                            localInsert2080_03.set(localInsert2080_03.get() + 1);
                         }
                     }
 //
@@ -475,6 +472,7 @@ public class QVUW2072JobConfig {
                         true,
                         callback,
                         (successCount) -> {
+                            // BATCH 또는 fallback 모드에서 commit 완료된 건수를 기반으로 개별 증가
                             // 성공 시점에 확정
                             confirmedInsert2080_01 += localInsert2080_01.get();
                             confirmedInsert2080_02 += localInsert2080_02.get();
@@ -484,10 +482,6 @@ public class QVUW2072JobConfig {
                             localInsert2080_01.remove();
                             localInsert2080_02.remove();
                             localInsert2080_03.remove();
-
-                            // BATCH 또는 fallback 모드에서 commit 완료된 건수를 기반으로 개별 증가
-//                            countInsert2080_01.addAndGet(successCount); // insert2080_01 기준
-//                            countInsert2080_02.addAndGet(successCount); // insert2080_02 기준
                         }
                 );
 
@@ -497,8 +491,6 @@ public class QVUW2072JobConfig {
                 log.info("✔ 최종 커밋 성공 건수 (insert2080_01): {}", confirmedInsert2080_01);
                 log.info("✔ 최종 커밋 성공 건수 (insert2080_02): {}", confirmedInsert2080_02);
                 log.info("✔ 최종 커밋 성공 건수 (insert2080_03): {}", confirmedInsert2080_03);
-
-
             }
         };
 

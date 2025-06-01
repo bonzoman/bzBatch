@@ -37,7 +37,7 @@ public class CustomDbWriterTemplet<T> {
                 session.commit();
                 // commit 성공 → call the consumer
                 onCommit.accept(1); // ✅ 단순히 commit 발생 사실만 알림 (count는 아님)
-                
+
 
 //                // BATCH 성공 시: 개별 항목에 대해 후처리 실행
 //                int success = 0;
@@ -54,7 +54,7 @@ public class CustomDbWriterTemplet<T> {
                     try {
                         callback.doInSession(item, mapper);
                         session.commit();
-//                        onSuccessCount.accept(1); // 단건 성공 시 1씩 증가
+                        onCommit.accept(1); // ✅ 단순히 commit 발생 사실만 알림 (count는 아님)
                     } catch (Exception ex) {
                         log.error("단건 처리 실패: {}", item, ex);
                         session.rollback();
@@ -85,7 +85,7 @@ public class CustomDbWriterTemplet<T> {
                         try {
                             callback.doInSession(item, fallbackMapper);
                             fallbackSession.commit();
-//                            onSuccessCount.accept(1); // fallback 성공 시도 카운팅
+                            onCommit.accept(1); // ✅ 단순히 commit 발생 사실만 알림 (count는 아님)
                         } catch (Exception ex) {
                             log.error("단건 처리 실패: {}", item, ex);
                             fallbackSession.rollback();
