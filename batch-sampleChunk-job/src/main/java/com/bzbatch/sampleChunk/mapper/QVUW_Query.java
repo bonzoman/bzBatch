@@ -36,6 +36,10 @@ public interface QVUW_Query {
 
     int insert2080_01(InFileAu02Vo inFileAu02Vo);
 
+    int insert2080_02(InFileAu02Vo inFileAu02Vo);
+    
+    int insert2080_03List(InFileAu02Vo inFileAu02Vo);
+
     @Delete("DELETE FROM AU02 WHERE LOB_CD = #{lobCd} AND ITEM_NAME = #{itemName} AND ITEM_DETL = #{itemDetl}")
     int delete2080_01(InFileAu02Vo inFileAu02Vo);
     /////////////////////////////////////////////////////////

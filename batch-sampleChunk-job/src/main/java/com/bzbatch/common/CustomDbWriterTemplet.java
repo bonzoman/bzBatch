@@ -7,6 +7,7 @@ import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -17,7 +18,8 @@ public class CustomDbWriterTemplet<T> {
     public void execute(List<? extends T> items,
                         Class<?> mapperClass,
                         boolean useBatch,
-                        BatchDbCallback<T> callback) {
+                        BatchDbCallback<T> callback,
+                        Consumer<Integer> onCommit) {//Consumer : in 1개, out없음
 
         ExecutorType executorType = useBatch ? ExecutorType.BATCH : ExecutorType.SIMPLE;
         SqlSession session = null;
@@ -26,29 +28,55 @@ public class CustomDbWriterTemplet<T> {
             session = sqlSessionFactory.openSession(executorType, false);
             Object mapper = session.getMapper(mapperClass);
 
-            for (T item : items) {
-                callback.doInSession(item, mapper);
-            }
+            if (useBatch) {
+                //ExecutorType.BATCH ---------------------------------
+                for (T item : items) {
+                    callback.doInSession(item, mapper);
+                }
+                session.flushStatements();
+                session.commit();
+                // commit 성공 → call the consumer
+                onCommit.accept(1); // ✅ 단순히 commit 발생 사실만 알림 (count는 아님)
+                
 
-            if (useBatch) session.flushStatements();
-            session.commit();
+//                // BATCH 성공 시: 개별 항목에 대해 후처리 실행
+//                int success = 0;
+//                for (T item : items) {
+//                    if (callback.onSuccess(item)) {
+//                        success++;
+//                    }
+//                }
+//                onSuccessCount.accept(success);
 
-        } catch (Exception e) {
-
-            log.warn("예외 발생 → rollback", e);
-            if (session != null) {
-                try {
-                    session.rollback(); // rollback
-                } catch (Exception rollbackEx) {
-                    log.error("rollback 중 예외", rollbackEx);
+            } else {
+                //ExecutorType.SIMPLE ---------------------------------
+                for (T item : items) {
+                    try {
+                        callback.doInSession(item, mapper);
+                        session.commit();
+//                        onSuccessCount.accept(1); // 단건 성공 시 1씩 증가
+                    } catch (Exception ex) {
+                        log.error("단건 처리 실패: {}", item, ex);
+                        session.rollback();
+                    }
                 }
             }
+        } catch (Exception e) {
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////
             // 2차: BATCH 실패 시, 단건 처리로 재시도
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-            log.warn("예외 발생: fallback 단건 처리 시작", e);
-
             if (useBatch) {
+                log.warn("예외 발생 → rollback", e);
+                if (session != null) {
+                    try {
+                        session.rollback(); // rollback
+                    } catch (Exception rollbackEx) {
+                        log.error("rollback 중 예외", rollbackEx);
+                    }
+                }
+
+                log.warn("예외 발생: fallback 단건 처리 시작", e);
+
                 // BATCH 실패 시 단건 처리 fallback
                 try (SqlSession fallbackSession = sqlSessionFactory.openSession(ExecutorType.SIMPLE, false)) {
                     Object fallbackMapper = fallbackSession.getMapper(mapperClass);
@@ -57,6 +85,7 @@ public class CustomDbWriterTemplet<T> {
                         try {
                             callback.doInSession(item, fallbackMapper);
                             fallbackSession.commit();
+//                            onSuccessCount.accept(1); // fallback 성공 시도 카운팅
                         } catch (Exception ex) {
                             log.error("단건 처리 실패: {}", item, ex);
                             fallbackSession.rollback();

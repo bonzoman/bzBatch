@@ -1,6 +1,7 @@
 package com.bzbatch.sampleChunk.config;
 
 
+import com.bzbatch.common.BatchDbCallback;
 import com.bzbatch.common.CustomDbWriterTemplet;
 import com.bzbatch.common.config.SamgJobExecutionListener;
 import com.bzbatch.sampleChunk.dto.AutoBatchCommonDto;
@@ -340,7 +341,6 @@ public class QVUW2072JobConfig {
 
                     QVUW_Query mapper = session.getMapper(QVUW_Query.class);
                     for (InFileAu02Vo item : items) {
-                        count++;
                         try {
                             if ("D".equalsIgnoreCase(jobOpt)) {
                                 mapper.delete2080_01(item);
@@ -351,6 +351,7 @@ public class QVUW2072JobConfig {
 //                                    mapper.insert2080_01(item); // 후저장
 //                                }
                                 mapper.insert2080_01(item); // 후저장
+                                count++;
                             }
                             session.commit(); // 커밋 꼭 필요
                             log.debug("a");
@@ -408,33 +409,103 @@ public class QVUW2072JobConfig {
     @StepScope
     public ItemWriter<InFileAu02Vo> customDbWriterTemplate(@Qualifier("manualSqlSessionFactory") SqlSessionFactory sqlSessionFactory,
                                                            @Value("#{jobParameters['JOB_OPT']}") String jobOpt) {
+        //익명 클래스 방식
+        return new ItemWriter<InFileAu02Vo>() {
+//            private final AtomicInteger countInsert2080_01 = new AtomicInteger(0);
+//            private final AtomicInteger countInsert2080_02 = new AtomicInteger(0);
+//            private final AtomicInteger countInsert2080_03 = new AtomicInteger(0);
 
-        //람다 방식
-        return items -> {
-            new CustomDbWriterTemplet<InFileAu02Vo>(sqlSessionFactory)
-                    .execute(items.getItems(), QVUW_Query.class, true, (item, mapper) -> {
+            // 업무 중 임시 카운트
+            private final ThreadLocal<Integer> localInsert2080_01 = ThreadLocal.withInitial(() -> 0);
+            private final ThreadLocal<Integer> localInsert2080_02 = ThreadLocal.withInitial(() -> 0);
+            private final ThreadLocal<Integer> localInsert2080_03 = ThreadLocal.withInitial(() -> 0);
+
+            // 확정 카운트 (최종 로그 출력용)
+            private int confirmedInsert2080_01 = 0;
+            private int confirmedInsert2080_02 = 0;
+            private int confirmedInsert2080_03 = 0;
+
+            @Override
+            public void write(Chunk<? extends InFileAu02Vo> items) throws Exception {
+                CustomDbWriterTemplet<InFileAu02Vo> templet = new CustomDbWriterTemplet<>(sqlSessionFactory);
+
+                BatchDbCallback<InFileAu02Vo> callback = new BatchDbCallback<>() {
+                    @Override
+                    public void doInSession(InFileAu02Vo item, Object mapper) {
                         QVUW_Query qvuwQuery = (QVUW_Query) mapper;
 
                         if ("D".equalsIgnoreCase(jobOpt)) {
                             qvuwQuery.delete2080_01(item);
                         } else if ("S".equalsIgnoreCase(jobOpt)) {
-                            if ("Buto3".equals(item.getItemDetl())) {
-                                item.setSeqNo(1); // 예외 유도용
-                            }
+//                            if ("Buto3".equals(item.getItemDetl())) {
+//                                item.setSeqNo(1); // 예외 유도용
+//                            }
                             qvuwQuery.insert2080_01(item);
+                            localInsert2080_01.set(localInsert2080_01.get() + 1);
+
+                            qvuwQuery.insert2080_02(item);
+                            localInsert2080_02.set(localInsert2080_02.get() + 1);
+
+
+                            for (int i = 0; i < 3; i++) {
+                                qvuwQuery.insert2080_03List(item);
+                                localInsert2080_03.set(localInsert2080_03.get() + 1);
+                            }
                         }
-                    });
+                    }
+//
+//                    @Override
+//                    public boolean onSuccess(InFileAu02Vo item) {
+//                        // commit 성공한 경우에만 global 카운터 증가
+//                        countInsert2080_01.addAndGet(insert01Local.get());
+//                        countInsert2080_02.addAndGet(insert02Local.get());
+//                        countInsert2080_03.addAndGet(insert03Local.get());
+//
+//                        // ThreadLocal 정리
+//                        insert01Local.remove();
+//                        insert02Local.remove();
+//                        insert03Local.remove();
+//
+//                        return true;
+//                    }
+                };
+
+                templet.execute(items.getItems(),
+                        QVUW_Query.class,
+                        true,
+                        callback,
+                        (successCount) -> {
+                            // 성공 시점에 확정
+                            confirmedInsert2080_01 += localInsert2080_01.get();
+                            confirmedInsert2080_02 += localInsert2080_02.get();
+                            confirmedInsert2080_03 += localInsert2080_03.get();
+
+                            // 누수 방지
+                            localInsert2080_01.remove();
+                            localInsert2080_02.remove();
+                            localInsert2080_03.remove();
+
+                            // BATCH 또는 fallback 모드에서 commit 완료된 건수를 기반으로 개별 증가
+//                            countInsert2080_01.addAndGet(successCount); // insert2080_01 기준
+//                            countInsert2080_02.addAndGet(successCount); // insert2080_02 기준
+                        }
+                );
+
+                log.debug("■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■");
+                log.debug("■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■");
+                log.debug("■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■");
+                log.info("✔ 최종 커밋 성공 건수 (insert2080_01): {}", confirmedInsert2080_01);
+                log.info("✔ 최종 커밋 성공 건수 (insert2080_02): {}", confirmedInsert2080_02);
+                log.info("✔ 최종 커밋 성공 건수 (insert2080_03): {}", confirmedInsert2080_03);
+
+
+            }
         };
 
-        //익명 클래스 방식
-//        return new ItemWriter<InFileAu02Vo>() {
-//            @Override
-//            public void write(Chunk<? extends InFileAu02Vo> items) throws Exception {
-//                CustomDbWriterTemplet<InFileAu02Vo> templet = new CustomDbWriterTemplet<>(sqlSessionFactory);
-//
-//                BatchDbCallback<InFileAu02Vo> callback = new BatchDbCallback<>() {
-//                    @Override
-//                    public void doInSession(InFileAu02Vo item, Object mapper) {
+//        //람다 방식
+//        return items -> {
+//            new CustomDbWriterTemplet<InFileAu02Vo>(sqlSessionFactory)
+//                    .execute(items.getItems(), QVUW_Query.class, true, (item, mapper) -> {
 //                        QVUW_Query qvuwQuery = (QVUW_Query) mapper;
 //
 //                        if ("D".equalsIgnoreCase(jobOpt)) {
@@ -445,11 +516,7 @@ public class QVUW2072JobConfig {
 //                            }
 //                            qvuwQuery.insert2080_01(item);
 //                        }
-//                    }
-//                };
-//
-//                templet.execute(items.getItems(), QVUW_Query.class, true, callback);
-//            }
+//                    });
 //        };
 
     }
