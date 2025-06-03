@@ -6,6 +6,7 @@ import com.bzbatch.common.CustomDbWriterTemplet;
 import com.bzbatch.common.config.SamgJobExecutionListener;
 import com.bzbatch.sampleChunk.dto.AutoBatchCommonDto;
 import com.bzbatch.sampleChunk.dto.InFileAu02Vo;
+import com.bzbatch.sampleChunk.listener.ChunkTrackingReader;
 import com.bzbatch.sampleChunk.mapper.QVUW_Query;
 import com.bzbatch.sampleChunk.processor.QVUW2072ItemProcessor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.Chunk;
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
@@ -78,6 +80,7 @@ public class QVUW2072JobConfig {
                                   QVUW_Query qvuwQuery,
 //                                  QVUW2072StepListener qvuw2072StepListener,
                                   FlatFileItemReader<InFileAu02Vo> fileReader,
+                                  FlatFileItemReader<InFileAu02Vo> chunkTrackingReader,
                                   QVUW2072ItemProcessor processor,
 
 //                                  MyBatisBatchItemWriter<InFileAu02Vo> myBatisWriter
@@ -94,17 +97,18 @@ public class QVUW2072JobConfig {
     ) {
         log.info("[QVUW2072JobConfig]  qvuw2072ChunkStep ======");
         return new StepBuilder("qvuw2072ChunkStep", jobRepository)
-                .<InFileAu02Vo, InFileAu02Vo>chunk(200, transactionManager)
-                .reader(fileReader)
+                .<InFileAu02Vo, InFileAu02Vo>chunk(2, transactionManager)
+                .reader(chunkTrackingReader(fileReader))
+//                .reader(fileReader)
                 .processor(processor)
-
 //                .writer(myBatisWriter) // DB 작업 처리
 //                .writer(customDbWriterForBatch) // DB 작업 처리
 //                .writer(customDbWriterForSimpleManualCommit) // DB 작업 처리
 //                .writer(customDbWriterForSimpleAutoCommit) // DB 작업 처리
                 .writer(customDbWriterTemplate) // DB 작업 처리
-
+//                .stream(chunkTrackingReader)  // <- 여기 필수!
 //                .writer(compositeWriter)
+                .stream(chunkTrackingReader)  // <- 여기 필수!
 //                .stream(successFileWriter)  // <- 여기 필수!
 //                .stream(failFileWriter)     // <- 여기 필수!
 //                .writer(compositeWriter)
@@ -117,7 +121,7 @@ public class QVUW2072JobConfig {
                 .listener(new StepExecutionListener() {
                     @Override
                     public void beforeStep(@NonNull StepExecution stepExecution) {
-                        log.info("[QVUW2072StepListener]  beforeStep ======");
+                        log.info("▣▣▣▣▣▣▣▣▣▣ jobConfig.beforeStep");
                         Path input = Paths.get("/batchlog/INFILESAMPLE.IN");
                         Path touch = Paths.get("/batchlog/INFILESAMPLE.IN.TOUCH");
 
@@ -142,17 +146,20 @@ public class QVUW2072JobConfig {
 
                     @Override
                     public ExitStatus afterStep(@NonNull StepExecution stepExecution) {
-                        log.info("[InputFileCheckListener]  afterStep ======");
+                        log.info("▣▣▣▣▣▣▣▣▣▣ jobConfig.afterStep");
                         return stepExecution.getExitStatus();
                     }
                 })
 //                .listener(errorWriter)
-                // ↓ 여기서 추가 가능
-//                .listener(new StepExecutionListener() { … })                    // Step 전/후 처리 로직
 //                .retryLimit(3)                                               // 재시도 횟수
 //                .retry(DataAccessException.class)                            // 재시도 대상 예외
 //                .listener(fileWriteListener())                                // ItemWriter 전용 리스너
                 .build();
+    }
+
+    @Bean
+    public ItemReader<InFileAu02Vo> chunkTrackingReader(ItemReader<InFileAu02Vo> inFileAu02reader) {
+        return new ChunkTrackingReader<InFileAu02Vo>(inFileAu02reader);
     }
 
 //    @Bean
@@ -204,9 +211,12 @@ public class QVUW2072JobConfig {
     @Bean
     @StepScope
     public QVUW2072ItemProcessor processor(@Value("#{jobParameters['JOB_OPT']}") String jobOpt,
-                                           QVUW_Query query) {
-        log.info("[QVUW2072JobConfig]  processor ======");
-        return new QVUW2072ItemProcessor(query, jobOpt);
+                                           //QVUW_Query query,
+                                           ChunkTrackingReader<InFileAu02Vo> chunkTrackingReader
+    ) {
+//        return new QVUW2072ItemProcessor(query, jobOpt);
+//        return new QVUW2072ItemProcessor(jobOpt);
+        return new QVUW2072ItemProcessor(chunkTrackingReader, jobOpt);
     }
 
     @Bean
@@ -441,7 +451,7 @@ public class QVUW2072JobConfig {
                             localInsert2080_01.set(localInsert2080_01.get() + 1);
 
                             if ("Buto3".equals(item.getItemDetl())) {
-                                item.setSeqNo(1);//오류위해 세번째 Dup 오류 발생
+//                                item.setSeqNo(1);//오류위해 세번째 Dup 오류 발생
                                 qvuwQuery.insert2080_02(item);
                                 localInsert2080_02.set(localInsert2080_02.get() + 1);
                             }

@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class InFileAu02Vo {
+
     private String lobCd;
     private String itemName;
     private String itemDetl;
