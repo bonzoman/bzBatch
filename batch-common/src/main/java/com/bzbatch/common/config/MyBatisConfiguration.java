@@ -1,4 +1,4 @@
-package com.bzbatch.sampleChunk.config;
+package com.bzbatch.common.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.session.SqlSessionFactory;

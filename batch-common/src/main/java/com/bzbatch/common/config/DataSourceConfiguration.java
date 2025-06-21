@@ -1,4 +1,4 @@
-package com.bzbatch.sampleChunk.config;
+package com.bzbatch.common.config;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;

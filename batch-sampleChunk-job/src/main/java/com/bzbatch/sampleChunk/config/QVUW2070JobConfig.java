@@ -1,7 +1,7 @@
 package com.bzbatch.sampleChunk.config;
 
 
-import com.bzbatch.common.config.SamgJobExecutionListener;
+import com.bzbatch.common.listener.SamgJobExecutionListener;
 import com.bzbatch.sampleChunk.dto.AutoBatchCommonDto;
 import com.bzbatch.sampleChunk.dto.InFileAu02Vo;
 import com.bzbatch.sampleChunk.mapper.QVUW_Query;

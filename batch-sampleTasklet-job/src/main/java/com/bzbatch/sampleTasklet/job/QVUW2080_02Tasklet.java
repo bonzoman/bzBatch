@@ -17,8 +17,6 @@ import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.lang.NonNull;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,12 +29,13 @@ public class QVUW2080_02Tasklet implements Tasklet {
     private final FlatFileItemReader<InFileAu02Vo> fileReader;
     private final FlatFileItemWriter<AutoBatchCommonDto> fileWriter;
     private final FlatFileItemWriter<AutoBatchCommonDto> errfileWriter;
-    private final SqlSessionFactory sqlSessionFactory;//Note: 트랜잭션 수동제어를 위해 추가
+    private final SqlSessionFactory sqlSessionFactory;
     private final int BATCH_SIZE = 10;
     private int gCount = 5;
 
     @Override
     public RepeatStatus execute(@NonNull StepContribution contribution, @NonNull ChunkContext chunkContext) throws Exception {
+
         JobParameters jobParameters = contribution.getStepExecution().getJobParameters();
         String time = jobParameters.getString("TIME");
         String JOB_OPT = jobParameters.getString("JOB_OPT");
@@ -51,9 +50,6 @@ public class QVUW2080_02Tasklet implements Tasklet {
 
 //            log.debug(StepExecution_Context_PUT_1);
             log.debug("{}", gCount++);
-            DefaultTransactionDefinition def = new DefaultTransactionDefinition();//Note: 트랜잭션 수동제어를 위해 추가
-            def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);//Note: 트랜잭션 수동제어를 위해 추가
-
 
             String strAweekAgoDay = "20250101"; // etc logic...
 

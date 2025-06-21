@@ -1,11 +1,10 @@
 package com.bzbatch.sampleTasklet.config;
 
 
-import com.bzbatch.common.config.SamgJobExecutionListener;
+import com.bzbatch.common.listener.SamgJobExecutionListener;
 import com.bzbatch.sampleTasklet.dto.AutoBatchCommonDto;
 import com.bzbatch.sampleTasklet.dto.InFileAu02Vo;
-import com.bzbatch.sampleTasklet.job.QVUW2080_02Tasklet;
-import com.bzbatch.sampleTasklet.mapper.QVUW2080_01_Query;
+import com.bzbatch.sampleTasklet.job.QVUW2080_03TaskletSimple;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.batch.core.Job;
@@ -20,6 +19,7 @@ import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -32,7 +32,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Slf4j
 public class QVUW2080JobConfig {
     @Bean
-    public Job qvuw2080Job(JobRepository jobRepository, Step qvuw2080step, SamgJobExecutionListener samgJobListener) {
+    public Job qvuw2080Job(JobRepository jobRepository,
+                           Step qvuw2080step,
+                           SamgJobExecutionListener samgJobListener) {
         log.debug("[JOB]  qvuw2080Job ======");
         return new JobBuilder("QVUWDC_20800", jobRepository)
                 .start(qvuw2080step)
@@ -44,13 +46,13 @@ public class QVUW2080JobConfig {
     @Bean
     public Step qvuw2080step(JobRepository jobRepository,
                              PlatformTransactionManager transactionManager,
-                             Tasklet tasklet,
+                             Tasklet task,
                              FlatFileItemReader<InFileAu02Vo> fileReader,
                              FlatFileItemWriter<AutoBatchCommonDto> fileWriter,
                              FlatFileItemWriter<AutoBatchCommonDto> errfileWriter) {
         log.debug("[STEP]  qvuw2080step ======");
         return new StepBuilder("qvuw2080step", jobRepository)
-                .tasklet(tasklet, transactionManager)
+                .tasklet(task, transactionManager)
                 .stream(fileReader) //NOTE: Step에서 open/close 자동 관리됨 (stream 등록됨) Tasklet에서 open/close 안해도 됨
                 .stream(fileWriter) //NOTE: Step에서 open/close 자동 관리됨 (stream 등록됨) Tasklet에서 open/close 안해도 됨
                 .stream(errfileWriter)
@@ -66,37 +68,26 @@ public class QVUW2080JobConfig {
                 .build();
     }
 
-//    @Bean
-//    public Tasklet tasklet(QVUW2080_01_Query query,
-//                           FlatFileItemReader<InFileAu02Vo> fileReader,
-//                           FlatFileItemWriter<AutoBatchCommonDto> fileWriter,
-//                           FlatFileItemWriter<AutoBatchCommonDto> errfileWriter,
-//                           PlatformTransactionManager transactionManager //Note: 트랜잭션 수동제어를 위해 추가
-//    ) {
-//        log.debug("[tasklet]  tasklet ======");
-//        return QVUW2080_01Tasklet.builder()
-//                .qvuw208001Query(query)
+    @Bean
+    public Tasklet task(FlatFileItemReader<InFileAu02Vo> fileReader,
+                        FlatFileItemWriter<AutoBatchCommonDto> fileWriter,
+                        FlatFileItemWriter<AutoBatchCommonDto> errfileWriter,
+                        @Qualifier("manualSqlSessionFactory")
+                        SqlSessionFactory sqlSessionFactory
+    ) {
+        log.debug("[tasklet]  tasklet ======");
+//        return QVUW2080_02Tasklet.builder()
 //                .fileReader(fileReader)
 //                .fileWriter(fileWriter)
 //                .errfileWriter(errfileWriter)
-//                .transactionManager(transactionManager)              //Note: 트랜잭션 수동제어를 위해 추가
+//                .sqlSessionFactory(sqlSessionFactory)
 //                .build();
-//    }
 
-    @Bean
-    public Tasklet tasklet(QVUW2080_01_Query query,
-                           FlatFileItemReader<InFileAu02Vo> fileReader,
-                           FlatFileItemWriter<AutoBatchCommonDto> fileWriter,
-                           FlatFileItemWriter<AutoBatchCommonDto> errfileWriter,
-                           SqlSessionFactory sqlSessionFactory //Note: 트랜잭션 수동제어를 위해 추가
-    ) {
-        log.debug("[tasklet]  tasklet ======");
-        return QVUW2080_02Tasklet.builder()
-                .qvuw208001Query(query)
+        return QVUW2080_03TaskletSimple.builder()
                 .fileReader(fileReader)
                 .fileWriter(fileWriter)
                 .errfileWriter(errfileWriter)
-                .sqlSessionFactory(sqlSessionFactory)             //Note: 트랜잭션 수동제어를 위해 추가
+                .sqlSessionFactory(sqlSessionFactory)
                 .build();
     }
 
@@ -109,7 +100,7 @@ public class QVUW2080JobConfig {
 
         return new FlatFileItemReaderBuilder<InFileAu02Vo>()
                 .name("fileReader")
-                .resource(new FileSystemResource("/batchlog/INFILESAMPLE.IN"))
+                .resource(new FileSystemResource("/batchlog/INFILESAMPLEcopy.IN"))
                 .encoding("EUC-KR")
                 .delimited().delimiter("^")
                 .names("lobCd", "itemName", "itemDetl", "itemAttr01", "itemAttr02", "itemAttr03", "itemAttr04", "itemAttr05")
