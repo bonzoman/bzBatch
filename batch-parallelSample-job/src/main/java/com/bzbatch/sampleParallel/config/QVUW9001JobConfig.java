@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
 public class QVUW9001JobConfig {
 
     private static final int PARALLEL_SIZE = 10;
+    private static final int CHUNK_SIZE = 1000000;
     private static final String WORK_DIR = "D:/batchlog";
     private static final String OUTPUT_PREFIX = "backup_";
     private static final String OUTPUT_EXT = ".txt";
@@ -122,7 +123,7 @@ public class QVUW9001JobConfig {
                                   @Qualifier("parallelTaskExecutor") TaskExecutor parallelTaskExecutor) {
 
         Step subParallelStep = new StepBuilder("subParallelStep", jobRepository)
-                .<InFileAu02Vo, InFileAu02Vo>chunk(1000, transactionManager)
+                .<InFileAu02Vo, InFileAu02Vo>chunk(CHUNK_SIZE, transactionManager)
                 .reader(reader)
                 .writer(writer)
                 .allowStartIfComplete(true)
@@ -181,7 +182,7 @@ public class QVUW9001JobConfig {
                 .sqlSessionFactory(sqlSessionFactory)
                 .queryId("com.bzbatch.sampleParallel.mapper.QVUW_Query.selectRangeData")
                 .parameterValues(Map.of("startId", startId, "endId", endId))
-                .pageSize(1000)
+                .pageSize(CHUNK_SIZE)
                 .build();
     }
 
@@ -191,15 +192,35 @@ public class QVUW9001JobConfig {
                                                        @Value("#{stepExecutionContext['endId']}") String endId,
                                                        @Value("#{stepExecutionContext['partitionIndex']}") String partitionIndex
     ) {
+
+//        FlatFileItemWriter<InFileAu02Vo> writer = new FlatFileItemWriter<>();
+//        writer.setName("fileWriter");
+//        writer.setEncoding("UTF-8");
+//        writer.setResource(new FileSystemResource(WORK_DIR + "/" + OUTPUT_PREFIX + partitionIndex + ".txt"));
+//
+//        // CSV 설정
+//        DelimitedLineAggregator<InFileAu02Vo> aggregator = new DelimitedLineAggregator<>();
+//        aggregator.setDelimiter(",");
+//        BeanWrapperFieldExtractor<InFileAu02Vo> extractor = new BeanWrapperFieldExtractor<>();
+//        extractor.setNames(new String[]{"lobCd", "itemName", "itemDetl", "seqNo",
+//                "itemDetlAttr01", "itemDetlAttr02", "itemDetlAttr03", "itemDetlAttr04", "itemDetlAttr05"});
+//        aggregator.setFieldExtractor(extractor);
+//        writer.setLineAggregator(aggregator);
+//
+//        // 중요: flush 횟수 줄이기
+//        writer.setTransactional(false); // 트랜잭션 경계 없이 파일 버퍼 유지 → flush 줄어듦
+//
+//        return writer;
+
         return new FlatFileItemWriterBuilder<InFileAu02Vo>()
                 .name("fileWriter")
-//                .resource(new FileSystemResource("/batchlog/output_" + startId + "_" + endId + ".txt"))
                 .resource(new FileSystemResource(WORK_DIR + "/" + OUTPUT_PREFIX + partitionIndex + ".txt"))
                 .delimited()
                 .delimiter(",")
                 .names("lobCd", "itemName", "itemDetl", "seqNo",
                         "itemDetlAttr01", "itemDetlAttr02", "itemDetlAttr03", "itemDetlAttr04", "itemDetlAttr05")
                 .encoding("UTF-8")
+                .transactional(false)
                 .build();
     }
 
