@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.bzbatch.sampleParallel.mapper.QVUW_Query">
+    <insert id="insert2080_01" parameterType="com.bzbatch.sampleParallel.dto.InFileAu02Vo">
+        INSERT INTO AU02
+        (LOB_CD,ITEM_NAME,ITEM_DETL,SEQ_NO,
+        ITEM_DETL_ATTR01,ITEM_DETL_ATTR02,ITEM_DETL_ATTR03,ITEM_DETL_ATTR04,ITEM_DETL_ATTR05)
+        VALUES
+        (#{lobCd},#{itemName},#{itemDetl},
+        <choose>
+            <when test="seqNo != null and seqNo > 0">
+                #{seqNo}
+            </when>
+            <otherwise>
+                (SELECT NVL(MAX(SEQ_NO), 0) + 1
+                FROM AU02 WHERE LOB_CD = #{lobCd} AND ITEM_NAME = #{itemName} AND ITEM_DETL = #{itemDetl} )
+            </otherwise>
+        </choose>
+
+        ,#{itemAttr01},#{itemAttr02},#{itemAttr03},#{itemAttr04},#{itemAttr05})
+    </insert>
+
+    <insert id="insert2080_02" parameterType="com.bzbatch.sampleParallel.dto.InFileAu02Vo">
+        INSERT INTO AU02
+        (LOB_CD,ITEM_NAME,ITEM_DETL,SEQ_NO,
+        ITEM_DETL_ATTR01,ITEM_DETL_ATTR02,ITEM_DETL_ATTR03,ITEM_DETL_ATTR04,ITEM_DETL_ATTR05)
+        VALUES
+        ('MV2',#{itemName},#{itemDetl},
+        <choose>
+            <when test="seqNo != null and seqNo > 0">
+                #{seqNo}
+            </when>
+            <otherwise>
+                (SELECT NVL(MAX(SEQ_NO), 0) + 1
+                FROM AU02 WHERE LOB_CD = #{lobCd} AND ITEM_NAME = #{itemName} AND ITEM_DETL = #{itemDetl} )
+            </otherwise>
+        </choose>
+
+        ,#{itemAttr01},#{itemAttr02},#{itemAttr03},#{itemAttr04},#{itemAttr05})
+    </insert>
+
+    <insert id="insert2080_03List" parameterType="com.bzbatch.sampleParallel.dto.InFileAu02Vo">
+        INSERT INTO AU02
+        (LOB_CD,ITEM_NAME,ITEM_DETL,SEQ_NO,
+        ITEM_DETL_ATTR01,ITEM_DETL_ATTR02,ITEM_DETL_ATTR03,ITEM_DETL_ATTR04,ITEM_DETL_ATTR05)
+        VALUES
+        ('MV3',#{itemName},#{itemDetl},
+        <choose>
+            <when test="seqNo != null and seqNo > 0">
+                #{seqNo}
+            </when>
+            <otherwise>
+                (SELECT NVL(MAX(SEQ_NO), 0) + 1
+                FROM AU02 WHERE LOB_CD = #{lobCd} AND ITEM_NAME = #{itemName} AND ITEM_DETL = #{itemDetl} )
+            </otherwise>
+        </choose>
+
+        ,#{itemAttr01},#{itemAttr02},#{itemAttr03},#{itemAttr04},#{itemAttr05})
+    </insert>
+</mapper>

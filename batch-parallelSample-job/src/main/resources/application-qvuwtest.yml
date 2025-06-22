@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: qvuw20800-job
+
+bzbatch:
+  datasource:
+    orasfqt-ssfqgvut-g2m:
+      jdbc-url: jdbc:oracle:thin:@localhost:1521/XE
+      username: g2m
+      password: g2m1!g2m2@
+      driver-class-name: oracle.jdbc.OracleDriver
+#      hikari:
+#        maximum-pool-size: 10
+#        minimum-idle: 2
+#        idle-timeout: 30000
+#        pool-name: HikariCP
+#        max-lifetime: 60000
+    orasfqt-ssfqgvut-hr:
+      jdbc-url: jdbc:oracle:thin:@localhost:1521/XE
+      username: HR
+      password: dhtmdwns1!
+      driver-class-name: oracle.jdbc.OracleDriver
+
+mybatis:
+  mapper-locations: classpath:/mapper/**/*.xml
+  type-aliases-package: com.bzbatch.sample.model
+  configuration:
+    map-underscore-to-camel-case: true
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  pattern:
+    console: "[%thread] %highlight(%-5level) %logger{36} - %msg%n"
+#    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %highlight(%-5level) %logger{36} - %msg%n"
+#    console: "%d{HH:mm:ss} %highlight(%-5level)  %cyan(%logger{36}) - %msg%n"
+  level:
+    root: INFO
+    com.bzbatch: DEBUG
+    org.mybatis: DEBUG
+    org.mybatis.spring.SqlSessionUtils: INFO
+    org.springframework.jdbc.core: INFO
+    org.springframework.transaction: TRACE
