@@ -2,6 +2,7 @@ package com.bzbatch.sampleParallel.mapper;
 
 import com.bzbatch.sampleParallel.dto.InFileAu02Vo;
 import com.bzbatch.sampleParallel.dto.ReadDto;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
@@ -51,5 +52,17 @@ public interface QVUW_Query {
             WHERE rn > #{_skiprows}
             """)
     List<InFileAu02Vo> selectRangeData(int startId, int endId);
+
+    @Insert("""
+            INSERT /*+ APPEND */ INTO AU02
+              (LOB_CD, ITEM_NAME, ITEM_DETL, SEQ_NO,
+               ITEM_DETL_ATTR01, ITEM_DETL_ATTR02, ITEM_DETL_ATTR03,
+               ITEM_DETL_ATTR04, ITEM_DETL_ATTR05)
+            VALUES
+              (#{lobCd}, #{itemName}, #{itemDetl}, #{seqNo},
+               #{itemDetlAttr01}, #{itemDetlAttr02}, #{itemDetlAttr03},
+               #{itemDetlAttr04}, #{itemDetlAttr05})
+            """)
+    int insertAu02Append(InFileAu02Vo inFileAu02Vo);
 
 }

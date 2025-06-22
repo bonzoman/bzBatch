@@ -26,7 +26,7 @@ mybatis:
   type-aliases-package: com.bzbatch.sample.model
   configuration:
     map-underscore-to-camel-case: true
-#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 logging:
   pattern:
@@ -39,4 +39,4 @@ logging:
     org.mybatis: DEBUG
     org.mybatis.spring.SqlSessionUtils: INFO
     org.springframework.jdbc.core: INFO
-    org.springframework.transaction: TRACE
+    org.springframework.transaction: INFO
